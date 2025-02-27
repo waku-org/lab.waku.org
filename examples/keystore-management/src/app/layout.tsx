@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RLN Keystore Management",
-  description: "Manage your RLN keystores",
+  title: "Waku Keystore Management",
+  description: "Manage your Waku RLN keystores securely",
 };
 
 export default function RootLayout({
