@@ -41,6 +41,8 @@
  * 
  */
 
+/*! noble-ciphers - MIT License (c) 2023 Paul Miller (paulmillr.com) */
+
 /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 
 /*! noble-secp256k1 - MIT License (c) 2019 Paul Miller (paulmillr.com) */
