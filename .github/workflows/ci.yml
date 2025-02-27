@@ -22,7 +22,8 @@ jobs:
             dogfooding,
             message-monitor,
             flush-notes,
-            buddybook
+            buddybook,
+            keystore-management
           ]
     runs-on: ubuntu-latest
     steps:
