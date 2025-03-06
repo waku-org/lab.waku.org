@@ -7,13 +7,13 @@ function getNetworkName(chainId: number | null): string {
   if (!chainId) return 'Unknown';
   
   switch (chainId) {
-    case 11155111: return 'Sepolia Testnet (Supported)';
+    case 59141: return 'Linea Sepolia (Supported)';
     default: return `Unsupported Network (Chain ID: ${chainId})`;
   }
 }
 
-// Sepolia Chain ID
-const SEPOLIA_CHAIN_ID = '0xaa36a7'; // 11155111 in hex
+// Linea Sepolia Chain ID
+const LINEA_SEPOLIA_CHAIN_ID = '0xe705'; // 59141 in hex
 
 // Define interface for provider errors
 interface ProviderRpcError extends Error {
@@ -24,18 +24,18 @@ interface ProviderRpcError extends Error {
 export function WalletInfo() {
   const { isConnected, address, balance, chainId, connectWallet, disconnectWallet, error } = useWallet();
 
-  // Function to switch to Sepolia network
-  const switchToSepolia = async () => {
+  // Function to switch to Linea Sepolia network
+  const switchToLineaSepolia = async () => {
     if (!window.ethereum) {
       console.error("MetaMask not installed");
       return;
     }
 
     try {
-      // Try to switch to Sepolia
+      // Try to switch to Linea Sepolia
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: SEPOLIA_CHAIN_ID }],
+        params: [{ chainId: LINEA_SEPOLIA_CHAIN_ID }],
       });
     } catch (err) {
       // If the error code is 4902, the chain hasn't been added to MetaMask
@@ -46,29 +46,29 @@ export function WalletInfo() {
             method: 'wallet_addEthereumChain',
             params: [
               {
-                chainId: SEPOLIA_CHAIN_ID,
-                chainName: 'Sepolia Testnet',
+                chainId: LINEA_SEPOLIA_CHAIN_ID,
+                chainName: 'Linea Sepolia Testnet',
                 nativeCurrency: {
-                  name: 'Sepolia ETH',
+                  name: 'Linea Sepolia ETH',
                   symbol: 'ETH',
                   decimals: 18,
                 },
-                rpcUrls: ['https://sepolia.infura.io/v3/'],
-                blockExplorerUrls: ['https://sepolia.etherscan.io'],
+                rpcUrls: ['https://linea-sepolia.infura.io/v3/', 'https://rpc.sepolia.linea.build'],
+                blockExplorerUrls: ['https://sepolia.lineascan.build'],
               },
             ],
           });
         } catch (addError) {
-          console.error("Error adding Sepolia chain", addError);
+          console.error("Error adding Linea Sepolia chain", addError);
         }
       } else {
-        console.error("Error switching to Sepolia chain", providerError);
+        console.error("Error switching to Linea Sepolia chain", providerError);
       }
     }
   };
 
   // Check if user is on unsupported network
-  const isUnsupportedNetwork = isConnected && chainId !== 11155111;
+  const isUnsupportedNetwork = isConnected && chainId !== 59141;
 
   return (
     <div className="bg-white rounded-lg shadow-sm dark:bg-gray-800 p-3">
@@ -110,12 +110,14 @@ export function WalletInfo() {
           </div>
           
           {isUnsupportedNetwork && (
-            <button
-              onClick={switchToSepolia}
-              className="w-full mt-1 px-2 py-1 text-xs bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
-            >
-              Switch to Sepolia
-            </button>
+            <div className="flex flex-col gap-2 mt-1">
+              <button
+                onClick={switchToLineaSepolia}
+                className="w-full px-2 py-1 text-xs bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
+              >
+                Switch to Linea Sepolia
+              </button>
+            </div>
           )}
         </div>
       ) : (
