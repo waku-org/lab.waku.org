@@ -10,7 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@waku/rln": "0.0.2-c41b319.0",
+    "@waku/rln": "0.0.2-a3e7f15.0",
     "next": "15.1.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
