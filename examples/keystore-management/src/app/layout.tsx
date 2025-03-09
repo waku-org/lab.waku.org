@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { WalletProvider } from "../contexts/WalletContext";
-import { RLNProvider } from "../contexts/RLNContext";
+import { RLNUnifiedProvider } from "../contexts/RLNUnifiedContext2";
+import { RLNImplementationProvider } from "../contexts/RLNImplementationContext";
 import { Header } from "../components/Header";
 
 const geistSans = Geist({
@@ -31,14 +32,16 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <WalletProvider>
-          <RLNProvider>
-            <div className="flex flex-col min-h-screen">
-              <Header />
-              <main className="flex-grow">
-                {children}
-              </main>
-            </div>
-          </RLNProvider>
+          <RLNImplementationProvider>
+            <RLNUnifiedProvider>
+              <div className="flex flex-col min-h-screen">
+                <Header />
+                <main className="flex-grow">
+                  {children}
+                </main>
+              </div>
+            </RLNUnifiedProvider>
+          </RLNImplementationProvider>
         </WalletProvider>
       </body>
     </html>
