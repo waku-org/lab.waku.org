@@ -42,33 +42,35 @@ export function UnifiedRLNProvider({ children }: { children: ReactNode }) {
     const fetchContext = async () => {
       try {
         if (implementation === 'standard') {
-          // Import the standard RLN context
+          // Import the standard RLN hook
           const standardModule = await import('./RLNContext');
-          const standardRLNContext = standardModule.RLNContext;
+          const { useRLN: useStandardRLN } = standardModule;
           
-          if (standardRLNContext) {
-            // Access the context value
-            const contextConsumer = standardRLNContext.Consumer;
-            contextConsumer(value => {
-              if (value) {
-                setContextValue(value);
-              }
-            });
+          // Create a temporary component to access the context
+          function TempComponent() {
+            const context = useStandardRLN();
+            setContextValue(context);
+            return null;
           }
+          
+          // Render the component within the provider
+          const { RLNProvider } = standardModule;
+          return <RLNProvider><TempComponent /></RLNProvider>;
         } else {
-          // Import the light RLN context
+          // Import the light RLN hook
           const lightModule = await import('./RLNLightContext');
-          const lightRLNContext = lightModule.RLNContext;
+          const { useRLN: useLightRLN } = lightModule;
           
-          if (lightRLNContext) {
-            // Access the context value
-            const contextConsumer = lightRLNContext.Consumer;
-            contextConsumer(value => {
-              if (value) {
-                setContextValue(value);
-              }
-            });
+          // Create a temporary component to access the context
+          function TempComponent() {
+            const context = useLightRLN();
+            setContextValue(context);
+            return null;
           }
+          
+          // Render the component within the provider
+          const { RLNProvider } = lightModule;
+          return <RLNProvider><TempComponent /></RLNProvider>;
         }
       } catch (error) {
         console.error('Error loading RLN context:', error);
