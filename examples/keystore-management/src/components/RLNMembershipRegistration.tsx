@@ -247,6 +247,41 @@ export default function RLNMembershipRegistration() {
               </div>
             </div>
           )}
+
+{identity && (
+                <div className="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
+                  <p className="font-medium mb-2">Your RLN Credentials:</p>
+                  <div className="text-xs font-mono overflow-auto">
+                    <h4 className="font-semibold mt-2 mb-1">Identity:</h4>
+                    <p className="mb-1">
+                      <span className="font-semibold">ID Commitment:</span> {Buffer.from(identity.IDCommitment).toString('hex')}
+                    </p>
+                    <p className="mb-1">
+                      <span className="font-semibold">ID Secret Hash:</span> {Buffer.from(identity.IDSecretHash).toString('hex')}
+                    </p>
+                    <p className="mb-1">
+                      <span className="font-semibold">ID Nullifier:</span> {Buffer.from(identity.IDNullifier).toString('hex')}
+                    </p>
+                    <p className="mb-3">
+                      <span className="font-semibold">ID Trapdoor:</span> {Buffer.from(identity.IDTrapdoor).toString('hex')}
+                    </p>
+                    
+                    {/* <h4 className="font-semibold mt-3 mb-1">Membership:</h4>
+                    <p className="mb-1">
+                      <span className="font-semibold">Chain ID:</span> {registrationResult.credentials.membership.chainId}
+                    </p>
+                    <p className="mb-1">
+                      <span className="font-semibold">Contract Address:</span> {registrationResult.credentials.membership.address}
+                    </p>
+                    <p className="mb-1">
+                      <span className="font-semibold">Tree Index:</span> {registrationResult.credentials.membership.treeIndex}
+                    </p> */}
+                  </div>
+                  <p className="text-xs mt-2 text-gray-600 dark:text-gray-400">
+                    These credentials are your proof of membership. Store them securely.
+                  </p>
+                </div>
+              )}
           
           {registrationResult.success === true && (
             <div className="mt-4 p-3 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded">
@@ -279,7 +314,7 @@ export default function RLNMembershipRegistration() {
                 Your RLN membership is now registered and can be used with your Waku node.
               </p>
               
-              {(registrationResult.credentials && !hasPasskey()) && (
+              {(registrationResult.credentials) && (
                 <div className="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
                   <p className="font-medium mb-2">Your RLN Credentials:</p>
                   <div className="text-xs font-mono overflow-auto">
@@ -295,41 +330,6 @@ export default function RLNMembershipRegistration() {
                     </p>
                     <p className="mb-3">
                       <span className="font-semibold">ID Trapdoor:</span> {Buffer.from(registrationResult.credentials.identity.IDTrapdoor).toString('hex')}
-                    </p>
-                    
-                    {/* <h4 className="font-semibold mt-3 mb-1">Membership:</h4>
-                    <p className="mb-1">
-                      <span className="font-semibold">Chain ID:</span> {registrationResult.credentials.membership.chainId}
-                    </p>
-                    <p className="mb-1">
-                      <span className="font-semibold">Contract Address:</span> {registrationResult.credentials.membership.address}
-                    </p>
-                    <p className="mb-1">
-                      <span className="font-semibold">Tree Index:</span> {registrationResult.credentials.membership.treeIndex}
-                    </p> */}
-                  </div>
-                  <p className="text-xs mt-2 text-gray-600 dark:text-gray-400">
-                    These credentials are your proof of membership. Store them securely.
-                  </p>
-                </div>
-              )}
-
-              {identity && (
-                <div className="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
-                  <p className="font-medium mb-2">Your RLN Credentials:</p>
-                  <div className="text-xs font-mono overflow-auto">
-                    <h4 className="font-semibold mt-2 mb-1">Identity:</h4>
-                    <p className="mb-1">
-                      <span className="font-semibold">ID Commitment:</span> {Buffer.from(identity.IDCommitment).toString('hex')}
-                    </p>
-                    <p className="mb-1">
-                      <span className="font-semibold">ID Secret Hash:</span> {Buffer.from(identity.IDSecretHash).toString('hex')}
-                    </p>
-                    <p className="mb-1">
-                      <span className="font-semibold">ID Nullifier:</span> {Buffer.from(identity.IDNullifier).toString('hex')}
-                    </p>
-                    <p className="mb-3">
-                      <span className="font-semibold">ID Trapdoor:</span> {Buffer.from(identity.IDTrapdoor).toString('hex')}
                     </p>
                     
                     {/* <h4 className="font-semibold mt-3 mb-1">Membership:</h4>

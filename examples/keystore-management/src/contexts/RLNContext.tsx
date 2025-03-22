@@ -225,18 +225,18 @@ export function RLNProvider({ children }: { children: ReactNode }) {
       
       const seed = await createPasskey(signer);
 
-      // const _credentials = await rln.registerMembership({signature: seed});      
-      // if (!_credentials) {
-      //   throw new Error("Failed to register membership: No credentials returned");
-      // }
-      // if (!_credentials.identity) {
-      //   throw new Error("Failed to register membership: Missing identity information");
-      // }
-      // if (!_credentials.membership) {
-      //   throw new Error("Failed to register membership: Missing membership information");
-      // }
+      const _credentials = await rln.registerMembership({signature: seed});      
+      if (!_credentials) {
+        throw new Error("Failed to register membership: No credentials returned");
+      }
+      if (!_credentials.identity) {
+        throw new Error("Failed to register membership: Missing identity information");
+      }
+      if (!_credentials.membership) {
+        throw new Error("Failed to register membership: Missing membership information");
+      }
       
-      return { success: true, credentials: null };
+      return { success: true, credentials: _credentials };
     } catch (err) {      
       let errorMsg = "Failed to register membership";
       if (err instanceof Error) {
