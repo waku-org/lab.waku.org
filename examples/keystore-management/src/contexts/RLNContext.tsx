@@ -6,7 +6,7 @@ import { useWallet } from './WalletContext';
 import { ethers } from 'ethers';
 
 // Constants
-const SIGNATURE_MESSAGE = "Sign this message to generate your RLN credentials";
+// const SIGNATURE_MESSAGE = "Sign this message to generate your RLN credentials";
 const ERC20_ABI = [
   "function allowance(address owner, address spender) view returns (uint256)",
   "function approve(address spender, uint256 amount) returns (bool)",
@@ -25,7 +25,7 @@ interface RLNContextType {
   isStarted: boolean;
   error: string | null;
   initializeRLN: () => Promise<void>;
-  registerMembership: (rateLimit: number) => Promise<{ success: boolean; error?: string; credentials?: DecryptedCredentials }>;
+  registerMembership: (rateLimit: number, createPasskey: (s: ethers.Signer) => Promise<string>) => Promise<{ success: boolean; error?: string; credentials?: DecryptedCredentials }>;
   rateMinLimit: number;
   rateMaxLimit: number;
 }
@@ -148,7 +148,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const registerMembership = async (rateLimit: number) => {
+  const registerMembership = async (rateLimit: number, createPasskey: (s: ethers.Signer) => Promise<string>) => {
     console.log("registerMembership called with rate limit:", rateLimit);
     
     if (!rln || !isStarted) {
@@ -223,11 +223,9 @@ export function RLNProvider({ children }: { children: ReactNode }) {
         console.log("Token allowance already sufficient");
       }
       
-      // Generate signature for identity
-      const message = `${SIGNATURE_MESSAGE} ${Date.now()}`;
-      const signature = await signer.signMessage(message);
+      const seed = await createPasskey(signer);
 
-      const _credentials = await rln.registerMembership({signature: signature});      
+      const _credentials = await rln.registerMembership({signature: seed});      
       if (!_credentials) {
         throw new Error("Failed to register membership: No credentials returned");
       }
@@ -258,7 +256,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
     } else {
       console.log("Wallet not connected or no signer available, skipping RLN initialization");
     }
-  }, [isConnected, signer]);
+  }, [isConnected, signer, initializeRLN]);
 
   // Debug log for state changes
   useEffect(() => {

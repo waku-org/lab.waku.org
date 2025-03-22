@@ -1,14 +1,18 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRLN } from '../contexts/RLNContext';
 import { useWallet } from '../contexts/WalletContext';
-import { DecryptedCredentials } from '@waku/rln';
+import { DecryptedCredentials, IdentityCredential } from '@waku/rln';
+import { usePasskey } from '@/contexts/usePasskey';
 
 export default function RLNMembershipRegistration() {
-  const { registerMembership, isInitialized, isStarted, rateMinLimit, rateMaxLimit, error, initializeRLN } = useRLN();
+  const { registerMembership, isInitialized, isStarted, rateMinLimit, rateMaxLimit, error, initializeRLN, rln } = useRLN();
   const { isConnected, address, chainId } = useWallet();
-  
+  const { createPasskey, hasPasskey, getPasskey, getPasskeyCredential } = usePasskey();
+
+  const [identity, setIdentity] = useState<IdentityCredential>();
+
   const [rateLimit, setRateLimit] = useState<number>(rateMinLimit);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
@@ -20,6 +24,17 @@ export default function RLNMembershipRegistration() {
     credentials?: DecryptedCredentials;
   }>({});
 
+  const handleReadPasskey = () => {
+    if (rln && hasPasskey()) {
+      const seed = getPasskey();
+      getPasskeyCredential(seed!);
+      const _identity = rln.zerokit.generateSeededIdentityCredential(seed!);
+      console.log(_identity);
+      setIdentity(_identity);
+    }
+  };
+
+  console.log(identity);
   const isLineaSepolia = chainId === 59141;
 
   const handleRateLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,7 +80,7 @@ export default function RLNMembershipRegistration() {
         warning: 'Please check your wallet to sign the registration message.' 
       });
       
-      const result = await registerMembership(rateLimit);
+      const result = await registerMembership(rateLimit, createPasskey);
       setRegistrationResult({
         ...result,
         credentials: result.credentials
@@ -139,6 +154,19 @@ export default function RLNMembershipRegistration() {
               {isInitializing ? "Initializing..." : "Initialize RLN"}
             </button>
           )}
+          <button
+              onClick={handleReadPasskey}
+              disabled={isInitializing || !isLineaSepolia}
+              className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                isInitializing 
+                  ? "bg-gray-400 text-gray-700 cursor-not-allowed" 
+                  : isLineaSepolia
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-gray-400 text-gray-700 cursor-not-allowed"
+              }`}
+            >
+              Read RLN from passkey
+            </button>
         </div>
         {error && (
           <p className="text-xs text-red-600 mt-1">{error}</p>
@@ -219,6 +247,41 @@ export default function RLNMembershipRegistration() {
               </div>
             </div>
           )}
+
+{identity && (
+                <div className="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
+                  <p className="font-medium mb-2">Your RLN Credentials:</p>
+                  <div className="text-xs font-mono overflow-auto">
+                    <h4 className="font-semibold mt-2 mb-1">Identity:</h4>
+                    <p className="mb-1">
+                      <span className="font-semibold">ID Commitment:</span> {Buffer.from(identity.IDCommitment).toString('hex')}
+                    </p>
+                    <p className="mb-1">
+                      <span className="font-semibold">ID Secret Hash:</span> {Buffer.from(identity.IDSecretHash).toString('hex')}
+                    </p>
+                    <p className="mb-1">
+                      <span className="font-semibold">ID Nullifier:</span> {Buffer.from(identity.IDNullifier).toString('hex')}
+                    </p>
+                    <p className="mb-3">
+                      <span className="font-semibold">ID Trapdoor:</span> {Buffer.from(identity.IDTrapdoor).toString('hex')}
+                    </p>
+                    
+                    {/* <h4 className="font-semibold mt-3 mb-1">Membership:</h4>
+                    <p className="mb-1">
+                      <span className="font-semibold">Chain ID:</span> {registrationResult.credentials.membership.chainId}
+                    </p>
+                    <p className="mb-1">
+                      <span className="font-semibold">Contract Address:</span> {registrationResult.credentials.membership.address}
+                    </p>
+                    <p className="mb-1">
+                      <span className="font-semibold">Tree Index:</span> {registrationResult.credentials.membership.treeIndex}
+                    </p> */}
+                  </div>
+                  <p className="text-xs mt-2 text-gray-600 dark:text-gray-400">
+                    These credentials are your proof of membership. Store them securely.
+                  </p>
+                </div>
+              )}
           
           {registrationResult.success === true && (
             <div className="mt-4 p-3 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded">
@@ -251,7 +314,7 @@ export default function RLNMembershipRegistration() {
                 Your RLN membership is now registered and can be used with your Waku node.
               </p>
               
-              {registrationResult.credentials && (
+              {(registrationResult.credentials) && (
                 <div className="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
                   <p className="font-medium mb-2">Your RLN Credentials:</p>
                   <div className="text-xs font-mono overflow-auto">
@@ -269,7 +332,7 @@ export default function RLNMembershipRegistration() {
                       <span className="font-semibold">ID Trapdoor:</span> {Buffer.from(registrationResult.credentials.identity.IDTrapdoor).toString('hex')}
                     </p>
                     
-                    <h4 className="font-semibold mt-3 mb-1">Membership:</h4>
+                    {/* <h4 className="font-semibold mt-3 mb-1">Membership:</h4>
                     <p className="mb-1">
                       <span className="font-semibold">Chain ID:</span> {registrationResult.credentials.membership.chainId}
                     </p>
@@ -278,7 +341,7 @@ export default function RLNMembershipRegistration() {
                     </p>
                     <p className="mb-1">
                       <span className="font-semibold">Tree Index:</span> {registrationResult.credentials.membership.treeIndex}
-                    </p>
+                    </p> */}
                   </div>
                   <p className="text-xs mt-2 text-gray-600 dark:text-gray-400">
                     These credentials are your proof of membership. Store them securely.
