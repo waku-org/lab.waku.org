@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useRLN } from '../contexts/RLNContext';
+import { useRLN } from '../contexts/RLNUnifiedContext2';
 import { useWallet } from '../contexts/WalletContext';
 import { DecryptedCredentials } from '@waku/rln';
 

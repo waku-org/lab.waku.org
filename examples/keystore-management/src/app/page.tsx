@@ -1,5 +1,6 @@
 import RLNMembershipRegistration from '../components/RLNMembershipRegistration';
 import { WalletInfo } from '../components/WalletInfo';
+import { RLNImplementationToggle } from '../components/RLNImplementationToggle';
 
 export default function Home() {
   return (
@@ -9,6 +10,12 @@ export default function Home() {
           <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-6">Waku Keystore Management</h2>
           
           <div className="space-y-8">
+            {/* RLN Implementation Toggle */}
+            <div>
+              <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">RLN Implementation</h3>
+              <RLNImplementationToggle />
+            </div>
+            
             {/* Wallet Information Section */}
             <div>
               <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Wallet Connection</h3>
