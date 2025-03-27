@@ -1,6 +1,6 @@
 "use client";
 
-import { useRLNImplementation, RLNImplementationType } from '../contexts/RLNImplementationContext';
+import { useRLNImplementation, type RLNImplementationType } from '../contexts/index';
 
 export function RLNImplementationToggle() {
   const { implementation, setImplementation } = useRLNImplementation();

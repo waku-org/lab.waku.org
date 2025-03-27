@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from 'react';
-import { useRLN } from '../contexts/RLNUnifiedContext2';
-import { useWallet } from '../contexts/WalletContext';
+import { useWallet } from '../contexts/index';
 import { KeystoreEntity } from '@waku/rln';
+import { useRLN } from '../contexts/rln';
 
 export default function RLNMembershipRegistration() {
   const { registerMembership, isInitialized, isStarted, rateMinLimit, rateMaxLimit, error, initializeRLN } = useRLN();

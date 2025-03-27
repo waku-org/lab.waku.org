@@ -35,4 +35,4 @@ export async function createRLNImplementation(type: 'standard' | 'light'): Promi
     // Create and return the light RLN implementation
     return new RLNLightInstance() as unknown as UnifiedRLNInstance;
   }
-}
+} 

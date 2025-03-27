@@ -32,4 +32,4 @@ export function useRLNImplementation() {
     throw new Error('useRLNImplementation must be used within a RLNImplementationProvider');
   }
   return context;
-}
+} 

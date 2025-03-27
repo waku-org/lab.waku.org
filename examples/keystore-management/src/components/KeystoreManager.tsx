@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useKeystore } from '../contexts/KeystoreContext';
+import { useKeystore } from '../contexts/index';
 import { saveKeystoreToFile, readKeystoreFromFile } from '../utils/fileUtils';
 
 export default function KeystoreManager() {

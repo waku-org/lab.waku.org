@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { useWallet } from '../contexts/WalletContext';
+import { useWallet } from '../contexts/index';
 
 function getNetworkName(chainId: number | null): string {
   if (!chainId) return 'Unknown';
