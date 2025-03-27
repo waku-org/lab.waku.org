@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRLN } from '../contexts/RLNUnifiedContext2';
 import { useWallet } from '../contexts/WalletContext';
-import { DecryptedCredentials } from '@waku/rln';
+import { KeystoreEntity } from '@waku/rln';
 
 export default function RLNMembershipRegistration() {
   const { registerMembership, isInitialized, isStarted, rateMinLimit, rateMaxLimit, error, initializeRLN } = useRLN();
@@ -12,12 +12,15 @@ export default function RLNMembershipRegistration() {
   const [rateLimit, setRateLimit] = useState<number>(rateMinLimit);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
+  const [saveToKeystore, setSaveToKeystore] = useState(true);
+  const [keystorePassword, setKeystorePassword] = useState('');
   const [registrationResult, setRegistrationResult] = useState<{
     success?: boolean;
     error?: string;
     txHash?: string;
     warning?: string;
-    credentials?: DecryptedCredentials;
+    credentials?: KeystoreEntity;
+    keystoreHash?: string;
   }>({});
 
   const isLineaSepolia = chainId === 59141;
@@ -56,6 +59,15 @@ export default function RLNMembershipRegistration() {
       return;
     }
     
+    // Validate keystore password if saving to keystore
+    if (saveToKeystore && keystorePassword.length < 8) {
+      setRegistrationResult({ 
+        success: false, 
+        error: 'Keystore password must be at least 8 characters long' 
+      });
+      return;
+    }
+    
     setIsRegistering(true);
     setRegistrationResult({});
     
@@ -65,11 +77,20 @@ export default function RLNMembershipRegistration() {
         warning: 'Please check your wallet to sign the registration message.' 
       });
       
-      const result = await registerMembership(rateLimit);
+      // Pass save options if saving to keystore
+      const saveOptions = saveToKeystore ? { password: keystorePassword } : undefined;
+      
+      const result = await registerMembership(rateLimit, saveOptions);
+      
       setRegistrationResult({
         ...result,
         credentials: result.credentials
       });
+      
+      // Clear password field after successful registration
+      if (result.success) {
+        setKeystorePassword('');
+      }
     } catch (error) {
       setRegistrationResult({ 
         success: false, 
@@ -189,6 +210,50 @@ export default function RLNMembershipRegistration() {
               </p>
             </div>
             
+            {/* Keystore Options */}
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <input 
+                  type="checkbox" 
+                  id="saveToKeystore" 
+                  checked={saveToKeystore} 
+                  onChange={(e) => setSaveToKeystore(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
+                />
+                <label 
+                  htmlFor="saveToKeystore" 
+                  className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Save credentials to keystore
+                </label>
+              </div>
+              
+              {saveToKeystore && (
+                <div>
+                  <label 
+                    htmlFor="keystorePassword" 
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    Keystore Password (min 8 characters)
+                  </label>
+                  <input 
+                    type="password" 
+                    id="keystorePassword" 
+                    autoComplete='password'
+                    value={keystorePassword} 
+                    onChange={(e) => setKeystorePassword(e.target.value)}
+                    placeholder="Enter password to encrypt your keystore"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    minLength={8}
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    The password will be used to encrypt your RLN credentials in the keystore.
+                    You will need this password to decrypt your credentials later.
+                  </p>
+                </div>
+              )}
+            </div>
+            
             {address && (
               <div className="text-sm text-gray-600 dark:text-gray-400 p-3 border border-gray-200 dark:border-gray-700 rounded-md">
                 <p className="font-medium mb-1">Registration Details:</p>
@@ -199,9 +264,9 @@ export default function RLNMembershipRegistration() {
             
             <button
               type="submit"
-              disabled={isRegistering || !isInitialized || !isStarted}
+              disabled={isRegistering || !isInitialized || !isStarted || (saveToKeystore && keystorePassword.length < 8)}
               className={`w-full py-2 px-4 rounded-md text-white font-medium 
-                ${isRegistering || !isInitialized || !isStarted
+                ${isRegistering || !isInitialized || !isStarted || (saveToKeystore && keystorePassword.length < 8)
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
                 }`}
@@ -288,6 +353,13 @@ export default function RLNMembershipRegistration() {
                       </p>
                     </div>
                     </>
+              )}
+              {registrationResult.keystoreHash && (
+                <p className="text-sm mt-2">
+                  <span className="font-medium">Credentials saved to keystore!</span> 
+                  <br />
+                  Hash: {registrationResult.keystoreHash.slice(0, 10)}...{registrationResult.keystoreHash.slice(-8)}
+                </p>
               )}
             </div>
           )}

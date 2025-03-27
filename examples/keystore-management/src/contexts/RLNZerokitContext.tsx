@@ -109,15 +109,9 @@ export function RLNProvider({ children }: { children: ReactNode }) {
         console.log("RLN instance already exists, skipping creation");
       }
       
-      // Start RLN if wallet is connected
       if (isConnected && signer && rln && !isStarted) {
         console.log("Starting RLN with signer...");
         try {
-          // Initialize with localKeystore if available (just for reference in localStorage)
-          const localKeystore = localStorage.getItem("rln-keystore") || "";
-          console.log("Local keystore available:", !!localKeystore);
-          
-          // Start RLN with signer
           await rln.start({ signer });
           
           setIsStarted(true);
