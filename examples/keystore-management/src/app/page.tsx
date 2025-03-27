@@ -2,6 +2,7 @@ import RLNMembershipRegistration from '../components/RLNMembershipRegistration';
 import { WalletInfo } from '../components/WalletInfo';
 import { RLNImplementationToggle } from '../components/RLNImplementationToggle';
 import KeystoreManager from '../components/KeystoreManager';
+import { RLNInitButton } from '../components/RLNInitButton';
 
 export default function Home() {
   return (
@@ -14,7 +15,10 @@ export default function Home() {
             {/* RLN Implementation Toggle */}
             <div>
               <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">RLN Implementation</h3>
-              <RLNImplementationToggle />
+              <div className="space-y-4">
+                <RLNImplementationToggle />
+                <RLNInitButton />
+              </div>
             </div>
             
             {/* Wallet Information Section */}

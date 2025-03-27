@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { KeystoreEntity } from '@waku/rln';
 import { createRLNImplementation, UnifiedRLNInstance } from './implementations';
 import { useRLNImplementation } from './RLNImplementationContext';
@@ -8,7 +8,6 @@ import { ethers } from 'ethers';
 import { useKeystore } from '../keystore';
 import { ERC20_ABI, LINEA_SEPOLIA_CONFIG, ensureLineaSepoliaNetwork } from './utils/network';
 
-// Define the context type
 interface RLNContextType {
   rln: UnifiedRLNInstance | null;
   isInitialized: boolean;
@@ -28,10 +27,8 @@ interface RLNContextType {
   saveCredentialsToKeystore: (credentials: KeystoreEntity, password: string) => Promise<string>;
 }
 
-// Create the context
 const RLNContext = createContext<RLNContextType | undefined>(undefined);
 
-// Create the provider component
 export function RLNProvider({ children }: { children: ReactNode }) {
   const { implementation } = useRLNImplementation();
   const [rln, setRln] = useState<UnifiedRLNInstance | null>(null);
@@ -96,7 +93,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
     setError(null);
   }, [implementation]);
   
-  const initializeRLN = async () => {
+  const initializeRLN = useCallback(async () => {
     console.log("InitializeRLN called. Connected:", isConnected, "Signer available:", !!signer);
     
     try {
@@ -106,7 +103,6 @@ export function RLNProvider({ children }: { children: ReactNode }) {
         console.log(`Creating RLN ${implementation} instance...`);
         
         try {
-          // Use our factory to create the appropriate implementation
           const rlnInstance = await createRLNImplementation(implementation);
           
           console.log("RLN instance created successfully:", !!rlnInstance);
@@ -122,7 +118,6 @@ export function RLNProvider({ children }: { children: ReactNode }) {
         console.log("RLN instance already exists, skipping creation");
       }
       
-      // Start RLN if wallet is connected
       if (isConnected && signer && rln && !isStarted) {
         console.log("Starting RLN with signer...");
         try {          
@@ -156,7 +151,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
       console.error('Error in initializeRLN:', err);
       setError(err instanceof Error ? err.message : 'Failed to initialize RLN');
     }
-  };
+  }, [isConnected, signer, implementation, rln, isStarted]);
 
   const getCurrentRateLimit = async (): Promise<number | null> => {
     try {
@@ -331,16 +326,6 @@ export function RLNProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Initialize RLN when wallet connects
-  useEffect(() => {
-    console.log("Wallet connection state changed:", { isConnected, hasSigner: !!signer });
-    
-    if (isConnected && signer) {
-      console.log("Wallet connected, attempting to initialize RLN");
-      initializeRLN();
-    }
-  }, [isConnected, signer]);
-
   return (
     <RLNContext.Provider
       value={{
@@ -362,7 +347,6 @@ export function RLNProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Hook to use the RLN context
 export function useRLN() {
   const context = useContext(RLNContext);
   if (context === undefined) {

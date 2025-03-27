@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 import { createRLN, DecryptedCredentials, LINEA_CONTRACT, RLNInstance } from '@waku/rln';
 import { useWallet } from '../../wallet';
 import { ethers } from 'ethers';
@@ -186,15 +186,6 @@ export function RLNProvider({ children }: { children: ReactNode }) {
       return { success: false, error: errorMsg };
     }
   };
-
-  // Initialize RLN when wallet connects
-  useEffect(() => {
-    console.log("Wallet connection state changed:", { isConnected, hasSigner: !!signer });
-    if (isConnected && signer) {
-      console.log("Wallet connected, attempting to initialize RLN");
-      initializeRLN();
-    }
-  }, [isConnected, signer]);
 
   return (
     <RLNContext.Provider
