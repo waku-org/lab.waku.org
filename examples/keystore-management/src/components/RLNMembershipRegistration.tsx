@@ -252,38 +252,42 @@ export default function RLNMembershipRegistration() {
               </p>
               
               {registrationResult.credentials && (
-                <div className="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
-                  <p className="font-medium mb-2">Your RLN Credentials:</p>
-                  <div className="text-xs font-mono overflow-auto">
-                    <h4 className="font-semibold mt-2 mb-1">Identity:</h4>
-                    <p className="mb-1">
-                      <span className="font-semibold">ID Commitment:</span> {Buffer.from(registrationResult.credentials.identity.IDCommitment).toString('hex')}
-                    </p>
-                    <p className="mb-1">
-                      <span className="font-semibold">ID Secret Hash:</span> {Buffer.from(registrationResult.credentials.identity.IDSecretHash).toString('hex')}
-                    </p>
-                    <p className="mb-1">
-                      <span className="font-semibold">ID Nullifier:</span> {Buffer.from(registrationResult.credentials.identity.IDNullifier).toString('hex')}
-                    </p>
-                    <p className="mb-3">
-                      <span className="font-semibold">ID Trapdoor:</span> {Buffer.from(registrationResult.credentials.identity.IDTrapdoor).toString('hex')}
-                    </p>
-                    
-                    <h4 className="font-semibold mt-3 mb-1">Membership:</h4>
-                    <p className="mb-1">
-                      <span className="font-semibold">Chain ID:</span> {registrationResult.credentials.membership.chainId}
-                    </p>
-                    <p className="mb-1">
-                      <span className="font-semibold">Contract Address:</span> {registrationResult.credentials.membership.address}
-                    </p>
-                    <p className="mb-1">
-                      <span className="font-semibold">Tree Index:</span> {registrationResult.credentials.membership.treeIndex}
-                    </p>
-                  </div>
-                  <p className="text-xs mt-2 text-gray-600 dark:text-gray-400">
-                    These credentials are your proof of membership. Store them securely.
-                  </p>
-                </div>
+                <><div className="mt-3 p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
+                      <p className="font-medium mb-2">Your RLN Credentials:</p>
+                      <div className="text-xs font-mono overflow-auto">
+                        <h4 className="font-semibold mt-2 mb-1">Identity:</h4>
+                        <p className="mb-1">
+                          <span className="font-semibold">ID Commitment:</span> {Buffer.from(registrationResult.credentials.identity.IDCommitment).toString('hex')}
+                        </p>
+                        <p className="mb-1">
+                          <span className="font-semibold">ID Secret Hash:</span> {Buffer.from(registrationResult.credentials.identity.IDSecretHash).toString('hex')}
+                        </p>
+                        <p className="mb-1">
+                          <span className="font-semibold">ID Nullifier:</span> {Buffer.from(registrationResult.credentials.identity.IDNullifier).toString('hex')}
+                        </p>
+                        <p className="mb-3">
+                          <span className="font-semibold">ID Trapdoor:</span> {Buffer.from(registrationResult.credentials.identity.IDTrapdoor).toString('hex')}
+                        </p>
+
+                        <h4 className="font-semibold mt-3 mb-1">Membership:</h4>
+                        <p className="mb-1">
+                          <span className="font-semibold">Chain ID:</span> {registrationResult.credentials.membership.chainId}
+                        </p>
+                        <p className="mb-1">
+                          <span className="font-semibold">Contract Address:</span> {registrationResult.credentials.membership.address}
+                        </p>
+                        <p className="mb-1">
+                          <span className="font-semibold">Tree Index:</span> {registrationResult.credentials.membership.treeIndex}
+                        </p>
+                        <p className="mb-1">
+                          <span className="font-semibold">Rate Limit:</span> {registrationResult.credentials.membership.rateLimit}
+                        </p>
+                      </div>
+                      <p className="text-xs mt-2 text-gray-600 dark:text-gray-400">
+                        These credentials are your proof of membership. Store them securely.
+                      </p>
+                    </div>
+                    </>
               )}
             </div>
           )}
@@ -315,6 +319,7 @@ export default function RLNMembershipRegistration() {
         <p>RLN Initialized: {isInitialized ? "Yes" : "No"}</p>
         <p>RLN Started: {isStarted ? "Yes" : "No"}</p>
         <p>Min Rate: {rateMinLimit}, Max Rate: {rateMaxLimit}</p>
+        <p>Current Rate Limit: {rateLimit}</p>
       </div>
     </div>
   );

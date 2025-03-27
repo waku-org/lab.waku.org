@@ -38,8 +38,8 @@ export function RLNProvider({ children }: { children: ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [rateMinLimit, setRateMinLimit] = useState(20);
-  const [rateMaxLimit, setRateMaxLimit] = useState(600);
+  const [rateMinLimit, setRateMinLimit] = useState(0);
+  const [rateMaxLimit, setRateMaxLimit] = useState(0);
 
   const ensureLineaSepoliaNetwork = async (): Promise<boolean> => {
     try {
@@ -105,10 +105,6 @@ export function RLNProvider({ children }: { children: ReactNode }) {
           
           setIsInitialized(true);
           console.log("isInitialized set to true");
-          
-          // Update rate limits to match contract requirements
-          setRateMinLimit(20);  // Contract minimum (RATE_LIMIT_PARAMS.MIN_RATE)
-          setRateMaxLimit(600); // Contract maximum (RATE_LIMIT_PARAMS.MAX_RATE)
         } catch (createErr) {
           console.error("Error creating RLN instance:", createErr);
           throw createErr;
@@ -130,6 +126,17 @@ export function RLNProvider({ children }: { children: ReactNode }) {
           
           setIsStarted(true);
           console.log("RLN started successfully, isStarted set to true");
+
+          const minRate = await rln.contract?.getMinRateLimit();
+          const maxRate = await rln.contract?.getMaxRateLimit();
+          if (!minRate || !maxRate) {
+            throw new Error("Failed to get rate limits from contract");
+          }
+
+          setRateMinLimit(minRate);
+          setRateMaxLimit(maxRate);
+          console.log("Min rate:", minRate);
+          console.log("Max rate:", maxRate);
         } catch (startErr) {
           console.error("Error starting RLN:", startErr);
           throw startErr;
@@ -167,6 +174,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
           error: `Rate limit must be between ${rateMinLimit} and ${rateMaxLimit}` 
         };
       }
+      await rln.contract?.setRateLimit(rateLimit);
       
       // Ensure we're on the correct network
       const isOnLineaSepolia = await ensureLineaSepoliaNetwork();
@@ -258,7 +266,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
     } else {
       console.log("Wallet not connected or no signer available, skipping RLN initialization");
     }
-  }, [isConnected, signer]);
+  }, [initializeRLN, isConnected, signer]);
 
   // Debug log for state changes
   useEffect(() => {
