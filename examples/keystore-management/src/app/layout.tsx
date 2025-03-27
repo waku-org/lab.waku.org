@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import "./globals.css";
 import {  WalletProvider, RLNImplementationProvider, KeystoreProvider, RLNProvider } from "../contexts/index";
 import { Header } from "../components/Header";
+import { AppStateProvider } from "../contexts/AppStateContext";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -24,20 +25,22 @@ export default function RootLayout({
       <body
         className={`${inter.variable} antialiased`}
       >
-        <WalletProvider>
-          <RLNImplementationProvider>
-            <KeystoreProvider>
-              <RLNProvider>
-                <div className="flex flex-col min-h-screen">
-                  <Header />
-                  <main className="flex-grow">
-                    {children}
-                  </main>
-                </div>
-              </RLNProvider>
-            </KeystoreProvider>
-          </RLNImplementationProvider>
-        </WalletProvider>
+        <AppStateProvider>
+          <WalletProvider>
+            <RLNImplementationProvider>
+              <KeystoreProvider>
+                <RLNProvider>
+                  <div className="flex flex-col min-h-screen">
+                    <Header />
+                    <main className="flex-grow">
+                      {children}
+                    </main>
+                  </div>
+                </RLNProvider>
+              </KeystoreProvider>
+            </RLNImplementationProvider>
+          </WalletProvider>
+        </AppStateProvider>
       </body>
     </html>
   );
