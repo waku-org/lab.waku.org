@@ -25,6 +25,7 @@ interface RLNContextType {
   getCurrentRateLimit: () => Promise<number | null>;
   getRateLimitsBounds: () => Promise<{ success: boolean; rateMinLimit: number; rateMaxLimit: number; error?: string }>;
   saveCredentialsToKeystore: (credentials: KeystoreEntity, password: string) => Promise<string>;
+  isLoading: boolean;
 }
 
 const RLNContext = createContext<RLNContextType | undefined>(undefined);
@@ -35,6 +36,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Get the signer from window.ethereum
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
@@ -98,6 +100,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
     
     try {
       setError(null);
+      setIsLoading(true);
       
       if (!rln) {
         console.log(`Creating RLN ${implementation} instance...`);
@@ -150,8 +153,18 @@ export function RLNProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Error in initializeRLN:', err);
       setError(err instanceof Error ? err.message : 'Failed to initialize RLN');
+    } finally {
+      setIsLoading(false);
     }
   }, [isConnected, signer, implementation, rln, isStarted]);
+
+  // Auto-initialize effect for Light implementation
+  useEffect(() => {
+    if (implementation === 'light' && isConnected && signer && !isInitialized && !isStarted && !isLoading) {
+      console.log('Auto-initializing Light RLN implementation...');
+      initializeRLN();
+    }
+  }, [implementation, isConnected, signer, isInitialized, isStarted, isLoading, initializeRLN]);
 
   const getCurrentRateLimit = async (): Promise<number | null> => {
     try {
@@ -339,7 +352,8 @@ export function RLNProvider({ children }: { children: ReactNode }) {
         rateMaxLimit,
         getCurrentRateLimit,
         getRateLimitsBounds,
-        saveCredentialsToKeystore
+        saveCredentialsToKeystore: saveToKeystore,
+        isLoading
       }}
     >
       {children}

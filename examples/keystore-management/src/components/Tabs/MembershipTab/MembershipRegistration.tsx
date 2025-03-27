@@ -139,11 +139,6 @@ export function MembershipRegistration() {
 
           <div className="flex items-center space-x-2">
             <RLNInitButton />
-            {isInitialized && isStarted && (
-              <span className="text-sm text-green-600 dark:text-green-400">
-                ✓ RLN Initialized
-              </span>
-            )}
           </div>
 
           {!isConnected ? (

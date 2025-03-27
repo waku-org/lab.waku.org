@@ -12,7 +12,7 @@ interface RLNImplementationContextType {
 const RLNImplementationContext = createContext<RLNImplementationContextType | undefined>(undefined);
 
 export function RLNImplementationProvider({ children }: { children: ReactNode }) {
-  const [implementation, setImplementation] = useState<RLNImplementationType>('standard');
+  const [implementation, setImplementation] = useState<RLNImplementationType>('light');
 
   return (
     <RLNImplementationContext.Provider value={{ implementation, setImplementation }}>
