@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import {  DecryptedCredentials, RLNInstance, RLNLightInstance } from '@waku/rln';
 import { useWallet } from './WalletContext';
 import { ethers } from 'ethers';
@@ -88,7 +88,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const initializeRLN = async () => {
+  const initializeRLN = useCallback(async () => {
     console.log("InitializeRLN called. Connected:", isConnected, "Signer available:", !!signer);
     
     try {
@@ -117,11 +117,6 @@ export function RLNProvider({ children }: { children: ReactNode }) {
       if (isConnected && signer && rln && !isStarted) {
         console.log("Starting RLN with signer...");
         try {
-          // Initialize with localKeystore if available (just for reference in localStorage)
-          const localKeystore = localStorage.getItem("rln-keystore") || "";
-          console.log("Local keystore available:", !!localKeystore);
-          
-          // Start RLN with signer
           await rln.start({ signer });
           
           setIsStarted(true);
@@ -153,7 +148,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
       console.error('Error in initializeRLN:', err);
       setError(err instanceof Error ? err.message : 'Failed to initialize RLN');
     }
-  };
+  }, [isConnected, signer, rln, isStarted]);
 
   const registerMembership = async (rateLimit: number) => {
     console.log("registerMembership called with rate limit:", rateLimit);
