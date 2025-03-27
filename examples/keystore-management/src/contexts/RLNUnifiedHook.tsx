@@ -43,7 +43,7 @@ export function UnifiedRLNProvider({ children }: { children: ReactNode }) {
       try {
         if (implementation === 'standard') {
           // Import the standard RLN hook
-          const standardModule = await import('./RLNContext');
+          const standardModule = await import('./RLNZerokitContext');
           const { useRLN: useStandardRLN } = standardModule;
           
           // Create a temporary component to access the context

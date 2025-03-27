@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode } from 'react';
-import { RLNProvider as StandardRLNProvider } from './RLNContext';
+import { RLNProvider as StandardRLNProvider } from './RLNZerokitContext';
 import { RLNProvider as LightRLNProvider } from './RLNLightContext';
 import { useRLNImplementation } from './RLNImplementationContext';
 
