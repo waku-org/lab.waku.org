@@ -5,6 +5,8 @@
 	import { getIdenticon } from '$lib/identicon.svelte';
 	import { getMessageId } from '$lib/sds/message';
 	import type { MessageChannelEventObject } from '$lib/sds/stream';
+	import HistoryItem from './HistoryItem.svelte';
+	import LegendModal from './LegendModal.svelte';
 
 	// Map event types to colors using index signature
 	const eventColors: { [key in string]: string } = {
@@ -31,6 +33,7 @@
 	let identicon: any = $state(null);
 	let currentFilter: string = $state('all');
 	let currentIdFilter: string | null = $state(null);
+	let showLegend: boolean = $state(false);
 
 	// Map of filter values to event types
 	const filterMap: { [key: string]: string | null } = {
@@ -127,6 +130,11 @@
 		currentIdFilter = null;
 	}
 
+	// Toggle legend display
+	function toggleLegend() {
+		showLegend = !showLegend;
+	}
+
 	onMount(async () => {
 		identicon = await getIdenticon();
 		// Subscribe to the event stream and collect events
@@ -137,6 +145,7 @@
 			}
 			history = [event, ...history];
 		});
+		(window as any).saveHistory = saveHistory;
 	});
 
 	onDestroy(() => {
@@ -145,16 +154,32 @@
 			unsubscribe();
 		}
 	});
+
+	const saveHistory = () => {
+		const sampleHistory = history.map((event) => {
+			if((event.payload as any).bloomFilter) {
+				(event.payload as any).bloomFilter = new Uint8Array([0, 0, 0, 0]);
+			}
+			return {
+				type: event.type,
+				payload: event.payload
+			};
+		});
+		localStorage.setItem('history', JSON.stringify(sampleHistory));
+	};
 </script>
 
 <div class="history-container">
-	<select class="item-filter" onchange={handleFilterChange} value={currentFilter}>
-		<option value="all">All ({eventCounts.all})</option>
-		<option value="sent">Sent ({eventCounts.sent})</option>
-		<option value="received">Received ({eventCounts.received})</option>
-		<option value="delivered">Delivered ({eventCounts.delivered})</option>
-		<option value="acknowledged">Acknowledged ({eventCounts.acknowledged})</option>
-	</select>
+	<div class="header">
+		<button class="help-button" onclick={toggleLegend}>?</button>
+		<select class="item-filter" onchange={handleFilterChange} value={currentFilter}>
+			<option value="all">All ({eventCounts.all})</option>
+			<option value="sent">Sent ({eventCounts.sent})</option>
+			<option value="received">Received ({eventCounts.received})</option>
+			<option value="delivered">Delivered ({eventCounts.delivered})</option>
+			<option value="acknowledged">Acknowledged ({eventCounts.acknowledged})</option>
+		</select>
+	</div>
 
 	{#if currentIdFilter}
 		<div class="id-filter-badge">
@@ -164,54 +189,16 @@
 	{/if}
 
 	{#each filteredHistory as event, index}
-		{@const color = eventColors[event.type] || '#888'}
-		{@const name = eventNames[event.type] || event.type}
-		{@const id = getMessageId(event)}
-		{@const matchesFilter = currentIdFilter && id === currentIdFilter}
-		<div class="history-item" onclick={() => handleEventClick(id)}>
-			<div class="item-container">
-				<div
-					class="event-box {matchesFilter ? 'highlight' : ''}"
-					style="background-color: {color};"
-				>
-					<div class="identicon">
-						<img src="data:image/svg+xml;base64,{identicons[index]}" alt="Identicon" />
-					</div>
-					<div class="event-info">
-						<div class="event-type">
-							{name}
-						</div>
-						<div class="event-id">
-							{id}
-						</div>
-					</div>
-					{#if event.type === MessageChannelEvent.MessageDelivered}
-						<div class="lamport-timestamp">
-							{event.payload.sentOrReceived}
-						</div>
-					{/if}
-					{#if event.type === MessageChannelEvent.MessageSent || event.type === MessageChannelEvent.MessageReceived}
-						<div class="lamport-timestamp">
-							{event.payload.lamportTimestamp}
-						</div>
-					{/if}
-				</div>
-				{#if event.type === MessageChannelEvent.MessageSent || event.type === MessageChannelEvent.MessageReceived}
-					{#each event.payload.causalHistory as dependency}
-						{@const dependencyMatchesFilter =
-							currentIdFilter && dependency.messageId === currentIdFilter}
-						<div
-							class="dependency-box {dependencyMatchesFilter ? 'highlight' : ''}"
-							style="background-color: {color};"
-							onclick={(event) => handleDependencyClick(dependency.messageId, event)}
-						>
-							{dependency.messageId}
-						</div>
-					{/each}
-				{/if}
-			</div>
-		</div>
+		<HistoryItem 
+			{event}
+			identicon={identicons[index]}
+			currentIdFilter={currentIdFilter}
+			onEventClick={handleEventClick}
+			onDependencyClick={handleDependencyClick}
+		/>
 	{/each}
+
+	<LegendModal bind:isOpen={showLegend} />
 </div>
 
 <style>
@@ -228,135 +215,39 @@
 		padding: 10px;
 	}
 
-	.history-item {
-		padding: 8px;
-		width: 100%;
-		cursor: pointer;
-	}
-
-	.item-container {
+	.header {
 		display: flex;
-		flex-direction: column;
-		align-items: stretch;
-		gap: 6px;
-		width: 100%;
-	}
-
-	.event-box {
-		display: flex;
-		flex-direction: row;
 		align-items: center;
-		justify-content: flex-start;
-		border-radius: 8px;
-		width: 100%;
-		min-height: 70px;
-		color: white;
 		padding: 8px;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-		position: relative;
-		transition: box-shadow 0.3s ease;
 	}
 
-	.dependency-box {
+	.help-button {
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		background-color: #f3f4f6;
+		border: 1px solid #d1d5db;
+		color: #4b5563;
+		font-weight: bold;
+		font-size: 16px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		margin-left: auto;
-		width: auto;
-		max-width: 80%;
-		min-height: 40px;
-		font-size: 11px;
-		font-family: monospace;
-		opacity: 0.85;
-		padding: 6px 12px;
-		border-radius: 8px;
-		color: white;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-		transition: box-shadow 0.3s ease;
+		cursor: pointer;
+		margin-right: 8px;
+		transition: all 0.2s;
 	}
 
-	.highlight {
-		border-left: 4px solid white;
-		border-right: 4px solid white;
-		position: relative;
-		background-image: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1));
+	.help-button:hover {
+		background-color: #e5e7eb;
+		color: #1f2937;
 	}
 
-	.highlight .event-type {
-		font-size: 16px;
-		color: white;
-		font-weight: bold;
-		font-style: italic;
-		letter-spacing: 0.5px;
-	}
-
-	.highlight .event-id,
-	.dependency-box.highlight {
-		/* color: white; */
-		font-weight: bold;
-		font-style: italic;
-		letter-spacing: 0.5px;
-	}
-
-	.dependency-box.highlight {
-		font-size: 12px;
-		/* background-color: rgba(255, 255, 255, 0.2) !important; */
-	}
-
-	.identicon {
-		width: 40px;
-		height: 40px;
+	.item-filter {
+		flex: 1;
+		padding: 8px;
 		border-radius: 4px;
-		overflow: hidden;
-		margin-right: 12px;
-	}
-
-	.identicon img {
-		width: 100%;
-		height: 100%;
-		object-fit: contain;
-	}
-
-	.identicon-placeholder {
-		width: 40px;
-		height: 40px;
-		border-radius: 4px;
-		background-color: rgba(255, 255, 255, 0.2);
-		margin-right: 12px;
-	}
-
-	.event-info {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-	}
-
-	.event-type {
-		font-size: 14px;
-		font-weight: bold;
-		text-align: left;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.event-id {
-		font-family: monospace;
-		font-size: 10px;
-		color: rgba(255, 255, 255, 0.7);
-		max-width: 220px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.lamport-timestamp {
-		position: absolute;
-		top: 8px;
-		right: 12px;
-		font-size: 12px;
-		color: rgba(255, 255, 255, 0.9);
-		font-weight: 500;
+		border: 1px solid #ddd;
 	}
 
 	.id-filter-badge {
@@ -365,7 +256,7 @@
 		background-color: #f3f4f6;
 		border-radius: 16px;
 		padding: 4px 12px;
-		margin: 8px 0;
+		margin: 8px;
 		max-width: fit-content;
 		font-size: 12px;
 	}

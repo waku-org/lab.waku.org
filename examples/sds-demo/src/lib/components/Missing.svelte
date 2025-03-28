@@ -160,8 +160,8 @@
 		font-weight: bold;
 		text-align: left;
 		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
+		/* overflow: hidden; */
+		/* text-overflow: ellipsis; */
 	}
 
 	.event-id {
@@ -169,8 +169,8 @@
 		font-size: 10px;
 		color: rgba(255, 255, 255, 0.7);
 		max-width: 220px;
-		overflow: hidden;
-		text-overflow: ellipsis;
+		/* overflow: hidden; */
+		/* text-overflow: ellipsis; */
 		white-space: nowrap;
 	}
 

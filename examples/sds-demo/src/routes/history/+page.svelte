@@ -23,12 +23,14 @@
 <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 px-4">
   <div class="flex-1 w-full">
     <PageLayout title="History" maxWidth="2xl" padding="sm:p-6 px-4" margin="sm:my-6 my-4">
+      <p class="text-gray-600 text-sm mb-4 leading-relaxed">Log of all events as they are emitted by the message channel.</p>
       <History />
     </PageLayout>
   </div>
   
   <div class="flex-1 w-full">
     <PageLayout title="Missing" maxWidth="2xl" padding="sm:p-6 px-4" margin="sm:my-6 my-4">
+      <p class="text-gray-600 text-sm mb-4 leading-relaxed">List of messages that are currently known to be missing from the channel.</p>
       <Missing />
     </PageLayout>
   </div>
