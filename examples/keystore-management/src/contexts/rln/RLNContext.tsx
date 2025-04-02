@@ -309,12 +309,14 @@ export function RLNProvider({ children }: { children: ReactNode }) {
       const credentials = await rln.registerMembership({
         signature: signature
       });
+      console.log("Credentials:", credentials);
       
       // If we have save options, save to keystore
       let keystoreHash: string | undefined;
       if (saveOptions && saveOptions.password && credentials) {
         try {
-          keystoreHash = await saveCredentialsToKeystore(credentials as KeystoreEntity, saveOptions.password);
+          const credentialsEntity = credentials as KeystoreEntity;
+          keystoreHash = await saveCredentialsToKeystore(credentialsEntity, saveOptions.password);
           console.log("Credentials saved to keystore with hash:", keystoreHash);
         } catch (saveErr) {
           console.error("Error saving credentials to keystore:", saveErr);

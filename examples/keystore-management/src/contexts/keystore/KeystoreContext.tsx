@@ -98,7 +98,7 @@ export function KeystoreProvider({ children }: { children: ReactNode }) {
     
     // Add the credential to the new keystore
     await singleCredentialKeystore.addCredential(credential, password);
-    
+    console.log("Single credential keystore:", singleCredentialKeystore.toString());
     return singleCredentialKeystore.toString();
   };
 
