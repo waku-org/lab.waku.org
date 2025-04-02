@@ -1,6 +1,7 @@
 import RLNMembershipRegistration from '../components/RLNMembershipRegistration';
 import { WalletInfo } from '../components/WalletInfo';
 import { RLNImplementationToggle } from '../components/RLNImplementationToggle';
+import KeystoreManager from '../components/KeystoreManager';
 
 export default function Home() {
   return (
@@ -30,6 +31,16 @@ export default function Home() {
                 Set your desired rate limit for messages per epoch.
               </p>
               <RLNMembershipRegistration />
+            </div>
+            
+            {/* Keystore Management Section */}
+            <div>
+              <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Keystore Management</h3>
+              <p className="mb-4 text-gray-700 dark:text-gray-300">
+                Export your keystore credentials to use them with your Waku node or import existing credentials.
+                Keep your keystores safe as they contain your membership information.
+              </p>
+              <KeystoreManager />
             </div>
           </div>
         </div>

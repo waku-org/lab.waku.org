@@ -4,6 +4,7 @@ import "./globals.css";
 import { WalletProvider } from "../contexts/WalletContext";
 import { RLNUnifiedProvider } from "../contexts/RLNUnifiedContext2";
 import { RLNImplementationProvider } from "../contexts/RLNImplementationContext";
+import { KeystoreProvider } from "../contexts/KeystoreContext";
 import { Header } from "../components/Header";
 
 const geistSans = Geist({
@@ -33,14 +34,16 @@ export default function RootLayout({
       >
         <WalletProvider>
           <RLNImplementationProvider>
-            <RLNUnifiedProvider>
-              <div className="flex flex-col min-h-screen">
-                <Header />
-                <main className="flex-grow">
-                  {children}
-                </main>
-              </div>
-            </RLNUnifiedProvider>
+            <KeystoreProvider>
+              <RLNUnifiedProvider>
+                <div className="flex flex-col min-h-screen">
+                  <Header />
+                  <main className="flex-grow">
+                    {children}
+                  </main>
+                </div>
+              </RLNUnifiedProvider>
+            </KeystoreProvider>
           </RLNImplementationProvider>
         </WalletProvider>
       </body>

@@ -6,6 +6,7 @@ import { UnifiedRLNInstance } from './RLNFactory';
 import { useRLNImplementation } from './RLNImplementationContext';
 import { createRLNImplementation } from './RLNFactory';
 import { ethers } from 'ethers';
+import { useKeystore } from './KeystoreContext';
 
 // Constants for RLN membership registration
 const ERC20_ABI = [
@@ -27,9 +28,17 @@ interface RLNContextType {
   isStarted: boolean;
   error: string | null;
   initializeRLN: () => Promise<void>;
-  registerMembership: (rateLimit: number) => Promise<{ success: boolean; error?: string; credentials?: KeystoreEntity }>;
+  registerMembership: (rateLimit: number, saveOptions?: { password: string }) => Promise<{ 
+    success: boolean; 
+    error?: string; 
+    credentials?: KeystoreEntity;
+    keystoreHash?: string;
+  }>;
   rateMinLimit: number;
   rateMaxLimit: number;
+  getCurrentRateLimit: () => Promise<number | null>;
+  getRateLimitsBounds: () => Promise<{ success: boolean; rateMinLimit: number; rateMaxLimit: number; error?: string }>;
+  saveCredentialsToKeystore: (credentials: KeystoreEntity, password: string) => Promise<string>;
 }
 
 // Create the context
@@ -42,12 +51,14 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [rateMinLimit, setRateMinLimit] = useState(20);
-  const [rateMaxLimit, setRateMaxLimit] = useState(600);
   
   // Get the signer from window.ethereum
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [rateMinLimit, setRateMinLimit] = useState<number>(0);
+  const [rateMaxLimit, setRateMaxLimit] = useState<number>(0);
+
+  const { saveCredentials: saveToKeystore } = useKeystore();
   
   // Listen for wallet connection
   useEffect(() => {
@@ -163,10 +174,6 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
           
           setIsInitialized(true);
           console.log("isInitialized set to true");
-          
-          // Update rate limits to match contract requirements
-          setRateMinLimit(20);  // Contract minimum (RATE_LIMIT_PARAMS.MIN_RATE)
-          setRateMaxLimit(600); // Contract maximum (RATE_LIMIT_PARAMS.MAX_RATE)
         } catch (createErr) {
           console.error("Error creating RLN instance:", createErr);
           throw createErr;
@@ -178,16 +185,21 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
       // Start RLN if wallet is connected
       if (isConnected && signer && rln && !isStarted) {
         console.log("Starting RLN with signer...");
-        try {
-          // Initialize with localKeystore if available (just for reference in localStorage)
-          const localKeystore = localStorage.getItem("rln-keystore") || "";
-          console.log("Local keystore available:", !!localKeystore);
-          
-          // Start RLN with signer
+        try {          
           await rln.start({ signer });
           
           setIsStarted(true);
           console.log("RLN started successfully, isStarted set to true");
+
+          try {
+            const minLimit = await rln.contract.getMinRateLimit();
+            const maxLimit = await rln.contract.getMaxRateLimit();
+            setRateMinLimit(minLimit);
+            setRateMaxLimit(maxLimit);
+            console.log("Rate limits fetched:", { min: minLimit, max: maxLimit });
+          } catch (limitErr) {
+            console.warn("Could not fetch rate limits:", limitErr);
+          }
         } catch (startErr) {
           console.error("Error starting RLN:", startErr);
           throw startErr;
@@ -206,7 +218,72 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const registerMembership = async (rateLimit: number) => {
+  const getCurrentRateLimit = async (): Promise<number | null> => {
+    try {
+      if (!rln || !rln.contract || !isStarted) {
+        console.log("Cannot get rate limit: RLN not initialized or started");
+        return null;
+      }
+      
+      const rateLimit = rln.contract.getRateLimit();
+      console.log("Current rate limit:", rateLimit);
+      return rateLimit;
+    } catch (err) {
+      console.error("Error getting current rate limit:", err);
+      return null;
+    }
+  };
+
+  const getRateLimitsBounds = async () => {
+    try {
+      if (!rln || !isStarted) {
+        return { 
+          success: false, 
+          rateMinLimit: 0, 
+          rateMaxLimit: 0, 
+          error: 'RLN not initialized or not started' 
+        };
+      }
+      const minLimit = await rln.contract.getMinRateLimit();
+      const maxLimit = await rln.contract.getMaxRateLimit();
+      
+      // Update state
+      setRateMinLimit(minLimit);
+      setRateMaxLimit(maxLimit);
+      
+      return { 
+        success: true, 
+        rateMinLimit: minLimit, 
+        rateMaxLimit: maxLimit 
+      };
+    } catch (error) {
+      console.error("Error getting rate limits bounds:", error);
+      return { 
+        success: false, 
+        rateMinLimit: 0, 
+        rateMaxLimit: 0, 
+        error: 'Failed to get rate limits bounds' 
+      };
+    }
+  }
+
+  // Save credentials to keystore
+  const saveCredentialsToKeystore = async (credentials: KeystoreEntity, password: string): Promise<string> => {
+    try {
+      return await saveToKeystore(credentials, password);
+    } catch (err) {
+      console.error("Error saving credentials to keystore:", err);
+      throw err;
+    }
+  };
+
+  // Update registerMembership to optionally save credentials to keystore
+  const registerMembership = async (rateLimit: number, saveOptions?: { password: string }): Promise<{ 
+    success: boolean; 
+    error?: string; 
+    credentials?: KeystoreEntity;
+    keystoreHash?: string;
+  }> => {
     console.log("registerMembership called with rate limit:", rateLimit);
     
     if (!rln || !isStarted) {
@@ -218,6 +295,13 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
     }
     
     try {
+      console.log("im here")
+      const rateMinLimit = await rln.contract.getMinRateLimit();
+      const rateMaxLimit = await rln.contract.getMaxRateLimit();
+      console.log({
+        rateMinLimit,
+        rateMaxLimit
+      })
       // Validate rate limit
       if (rateLimit < rateMinLimit || rateLimit > rateMaxLimit) {
         return { 
@@ -225,6 +309,8 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
           error: `Rate limit must be between ${rateMinLimit} and ${rateMaxLimit}` 
         };
       }
+      rln.contract.setRateLimit(rateLimit);
+      console.log("Rate limit set to:", rateLimit);
       
       // Ensure we're on the correct network
       const isOnLineaSepolia = await ensureLineaSepoliaNetwork();
@@ -302,16 +388,21 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
         
         console.log("Membership registered successfully");
         
-        // Store credentials in localStorage for reference
-        try {
-          localStorage.setItem("rln-keystore", JSON.stringify(credentials));
-        } catch (storageErr) {
-          console.warn("Could not store credentials in localStorage:", storageErr);
+        // If saveOptions provided, save to keystore
+        let keystoreHash: string | undefined;
+        if (saveOptions?.password) {
+          try {
+            keystoreHash = await saveCredentialsToKeystore(credentials, saveOptions.password);
+            console.log("Credentials saved to keystore with hash:", keystoreHash);
+          } catch (keystoreErr) {
+            console.warn("Could not save credentials to keystore:", keystoreErr);
+          }
         }
         
         return { 
           success: true, 
-          credentials: credentials
+          credentials,
+          keystoreHash
         };
       } catch (registerErr) {
         console.error("Error registering membership:", registerErr);
@@ -337,8 +428,11 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
     error,
     initializeRLN,
     registerMembership,
+    getCurrentRateLimit,
+    getRateLimitsBounds,
     rateMinLimit,
-    rateMaxLimit
+    rateMaxLimit,
+    saveCredentialsToKeystore,
   };
 
   return (
@@ -356,3 +450,4 @@ export function useRLN() {
   }
   return context;
 }
+

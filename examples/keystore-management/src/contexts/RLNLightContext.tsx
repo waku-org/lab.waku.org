@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import {  DecryptedCredentials, RLNInstance, RLNLightInstance } from '@waku/rln';
 import { useWallet } from './WalletContext';
 import { ethers } from 'ethers';
@@ -38,8 +38,8 @@ export function RLNProvider({ children }: { children: ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [rateMinLimit, setRateMinLimit] = useState(20);
-  const [rateMaxLimit, setRateMaxLimit] = useState(600);
+  const [rateMinLimit, setRateMinLimit] = useState(0);
+  const [rateMaxLimit, setRateMaxLimit] = useState(0);
 
   const ensureLineaSepoliaNetwork = async (): Promise<boolean> => {
     try {
@@ -88,7 +88,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const initializeRLN = async () => {
+  const initializeRLN = useCallback(async () => {
     console.log("InitializeRLN called. Connected:", isConnected, "Signer available:", !!signer);
     
     try {
@@ -105,10 +105,6 @@ export function RLNProvider({ children }: { children: ReactNode }) {
           
           setIsInitialized(true);
           console.log("isInitialized set to true");
-          
-          // Update rate limits to match contract requirements
-          setRateMinLimit(20);  // Contract minimum (RATE_LIMIT_PARAMS.MIN_RATE)
-          setRateMaxLimit(600); // Contract maximum (RATE_LIMIT_PARAMS.MAX_RATE)
         } catch (createErr) {
           console.error("Error creating RLN instance:", createErr);
           throw createErr;
@@ -121,15 +117,21 @@ export function RLNProvider({ children }: { children: ReactNode }) {
       if (isConnected && signer && rln && !isStarted) {
         console.log("Starting RLN with signer...");
         try {
-          // Initialize with localKeystore if available (just for reference in localStorage)
-          const localKeystore = localStorage.getItem("rln-keystore") || "";
-          console.log("Local keystore available:", !!localKeystore);
-          
-          // Start RLN with signer
           await rln.start({ signer });
           
           setIsStarted(true);
           console.log("RLN started successfully, isStarted set to true");
+
+          const minRate = await rln.contract?.getMinRateLimit();
+          const maxRate = await rln.contract?.getMaxRateLimit();
+          if (!minRate || !maxRate) {
+            throw new Error("Failed to get rate limits from contract");
+          }
+
+          setRateMinLimit(minRate);
+          setRateMaxLimit(maxRate);
+          console.log("Min rate:", minRate);
+          console.log("Max rate:", maxRate);
         } catch (startErr) {
           console.error("Error starting RLN:", startErr);
           throw startErr;
@@ -146,7 +148,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
       console.error('Error in initializeRLN:', err);
       setError(err instanceof Error ? err.message : 'Failed to initialize RLN');
     }
-  };
+  }, [isConnected, signer, rln, isStarted]);
 
   const registerMembership = async (rateLimit: number) => {
     console.log("registerMembership called with rate limit:", rateLimit);
@@ -167,6 +169,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
           error: `Rate limit must be between ${rateMinLimit} and ${rateMaxLimit}` 
         };
       }
+      await rln.contract?.setRateLimit(rateLimit);
       
       // Ensure we're on the correct network
       const isOnLineaSepolia = await ensureLineaSepoliaNetwork();
@@ -258,7 +261,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
     } else {
       console.log("Wallet not connected or no signer available, skipping RLN initialization");
     }
-  }, [isConnected, signer]);
+  }, [initializeRLN, isConnected, signer]);
 
   // Debug log for state changes
   useEffect(() => {
