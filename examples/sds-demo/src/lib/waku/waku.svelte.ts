@@ -121,9 +121,8 @@ export async function startWaku(): Promise<void> {
 
 		// Connect to peers
 		await node.dial(
-			"/ip4/127.0.0.1/tcp/8000/ws/p2p/16Uiu2HAm6LgMnvadFttVeFsW5WHuoefsviCRbfo4AvnjySp4rnNt"
-			// "/dns4/node-01.do-ams3.waku.sandbox.status.im/tcp/8095/wss/p2p/16Uiu2HAmNaeL4p3WEYzC9mgXBmBWSgWjPHRvatZTXnp8Jgv3iKsb"
 			// '/dns4/waku-test.bloxy.one/tcp/8095/wss/p2p/16Uiu2HAmSZbDB7CusdRhgkD81VssRjQV5ZH13FbzCGcdnbbh6VwZ'
+			"/ip4/127.0.0.1/tcp/8000/ws/p2p/16Uiu2HAm3TLea2NVs4dAqYM2gAgoV9CMKGeD1BkP3RAvmk7HBAbU"
 		);
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(window as any).waku = node;

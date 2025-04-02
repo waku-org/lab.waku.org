@@ -18,7 +18,7 @@
       <ActionModule />
       <ConnectionIndicator />
     </Header>
-    <div class="flex-1 overflow-auto">
+    <div class="flex-1 overflow-auto my-1">
       <slot />
     </div>
   </div>

@@ -73,7 +73,7 @@ async function send(payload: Uint8Array): Promise<void> {
 			console.error('error sending message', result.failures);
 		}
 		return {
-			success: result.successes.length > 0,
+			success: true,
 			retrievalHint: hash
 		};
 	});

@@ -206,7 +206,10 @@
 		display: flex;
 		flex-direction: column;
 		height: 100%;
-		overflow: hidden;
+		overflow-y: scroll;
+		overflow-x: hidden;
+		min-width: 400px;
+		scrollbar-width: none;
 	}
 
 	.virtualizer-container {

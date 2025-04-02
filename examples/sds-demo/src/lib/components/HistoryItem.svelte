@@ -3,11 +3,15 @@
 	import type { MessageChannelEventObject } from '$lib/sds/stream';
 	import { getMessageId } from '$lib/sds/message';
 
-	export let event: MessageChannelEventObject;
-	export let identicon: string;
+	export let event: MessageChannelEventObject | undefined = undefined;
+	export let identicon: string = '';
 	export let currentIdFilter: string | null = null;
-	export let onEventClick: (id: string | null) => void;
-	export let onDependencyClick: (messageId: string, event: Event) => void;
+	export let onEventClick: (id: string | null) => void = () => {};
+	export let onDependencyClick: (messageId: string, event: Event) => void = () => {};
+	export let width: number = 340;
+	export let height: number = 178;
+
+	export let overflow: boolean = true;
 
 	// Map event types to colors using index signature
 	const eventColors: { [key in string]: string } = {
@@ -29,13 +33,15 @@
 		[MessageChannelEvent.MissedMessages]: 'Missed'
 	};
 
-	$: id = getMessageId(event);
-	$: color = eventColors[event.type] || '#888';
-	$: name = eventNames[event.type] || event.type;
+	$: id = event ? getMessageId(event) : null;
+	$: color = event ? (eventColors[event.type] || '#888') : '#f0f0f0';
+	$: name = event ? (eventNames[event.type] || event.type) : '';
 	$: matchesFilter = currentIdFilter && id === currentIdFilter;
 
 	function handleEventClick() {
-		onEventClick(id);
+		if (event && id) {
+			onEventClick(id);
+		}
 	}
 
 	function handleDependencyClick(messageId: string, e: Event) {
@@ -43,57 +49,66 @@
 	}
 </script>
 
-<div class="history-item" on:click={handleEventClick}>
-	<div class="item-container">
-		<div
-			class="event-box {matchesFilter ? 'highlight' : ''}"
-			style="background-color: {color};"
-		>
-			<div class="identicon">
-				<img src="data:image/svg+xml;base64,{identicon}" alt="Identicon" />
+<div class="history-item {!event ? 'empty' : ''}" style="width: 100%; height: {height}px;" on:click={event ? handleEventClick : undefined}>
+	{#if event}
+		<div class="item-container">
+			<div
+				class="event-box {matchesFilter ? 'highlight' : ''}"
+				style="background-color: {color};"
+			>
+				<div class="identicon">
+					<img src="data:image/svg+xml;base64,{identicon}" alt="Identicon" />
+				</div>
+				<div class="event-info" style="overflow: {overflow ? 'visible' : 'hidden'};">
+					<div class="event-type">
+						{name}
+					</div>
+					<div class="event-id">
+						{id}
+					</div>
+				</div>
+				{#if event.type === MessageChannelEvent.MessageDelivered}
+					<div class="sent-or-received">
+						{event.payload.sentOrReceived}
+					</div>
+				{/if}
+				{#if event.type === MessageChannelEvent.MessageSent || event.type === MessageChannelEvent.MessageReceived}
+					<div class="lamport-timestamp">
+						{event.payload.lamportTimestamp}
+					</div>
+				{/if}
 			</div>
-			<div class="event-info">
-				<div class="event-type">
-					{name}
-				</div>
-				<div class="event-id">
-					{id}
-				</div>
-			</div>
-			{#if event.type === MessageChannelEvent.MessageDelivered}
-				<div class="sent-or-received">
-					{event.payload.sentOrReceived}
-				</div>
-			{/if}
 			{#if event.type === MessageChannelEvent.MessageSent || event.type === MessageChannelEvent.MessageReceived}
-				<div class="lamport-timestamp">
-					{event.payload.lamportTimestamp}
-				</div>
+				{#each event.payload.causalHistory as dependency}
+					{@const dependencyMatchesFilter =
+						currentIdFilter && dependency.messageId === currentIdFilter}
+					<div
+						class="dependency-box {dependencyMatchesFilter ? 'highlight' : ''}"
+						style="background-color: {color};"
+						on:click={(e) => handleDependencyClick(dependency.messageId, e)}
+					>
+						{dependency.messageId}
+					</div>
+				{/each}
 			{/if}
 		</div>
-		{#if event.type === MessageChannelEvent.MessageSent || event.type === MessageChannelEvent.MessageReceived}
-			<!-- <section class="dependency-container"> -->
-			{#each event.payload.causalHistory as dependency}
-				{@const dependencyMatchesFilter =
-					currentIdFilter && dependency.messageId === currentIdFilter}
-				<div
-					class="dependency-box {dependencyMatchesFilter ? 'highlight' : ''}"
-					style="background-color: {color};"
-					on:click={(e) => handleDependencyClick(dependency.messageId, e)}
-				>
-					{dependency.messageId}
-				</div>
-				{/each}
-			<!-- </section> -->
-		{/if}
-	</div>
+	{/if}
 </div>
 
 <style>
 	.history-item {
 		padding: 8px;
-		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.history-item:not(.empty) {
 		cursor: pointer;
+	}
+
+	.empty {
+		border: 1px dashed #ccc;
+		border-radius: 8px;
+		background-color: #f9f9f9;
 	}
 
 	.item-container {
@@ -102,6 +117,7 @@
 		align-items: stretch;
 		gap: 6px;
 		width: 100%;
+		height: 100%;
 	}
 
 	.event-box {
@@ -135,6 +151,8 @@
 		color: white;
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 		transition: box-shadow 0.3s ease;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.highlight {

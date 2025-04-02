@@ -7,7 +7,7 @@
 	// Redirect to history page when connected
 	$effect(() => {
 	  if ($connectionState.status === "connected") {
-		goto('/history');
+		goto('/state-graph');
 	  }
 	});
   </script>
