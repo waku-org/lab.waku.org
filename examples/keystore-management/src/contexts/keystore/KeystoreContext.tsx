@@ -11,7 +11,7 @@ interface KeystoreContextType {
   hasStoredCredentials: boolean;
   storedCredentialsHashes: string[];
   saveCredentials: (credentials: KeystoreEntity, password: string) => Promise<string>;
-  exportKeystore: () => string;
+  exportCredential: (hash: string, password: string) => Promise<string>;
   importKeystore: (keystoreJson: string) => boolean;
   removeCredential: (hash: string) => void;
 }
@@ -82,12 +82,24 @@ export function KeystoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const exportKeystore = (): string => {
+  const exportCredential = async (hash: string, password: string): Promise<string> => {
     if (!keystore) {
       throw new Error("Keystore not initialized");
     }
 
-    return keystore.toString();
+    // Create a new keystore instance for the single credential
+    const singleCredentialKeystore = Keystore.create();
+    
+    // Get the credential from the main keystore
+    const credential = await keystore.readCredential(hash, password);
+    if (!credential) {
+      throw new Error("Credential not found");
+    }
+    
+    // Add the credential to the new keystore
+    await singleCredentialKeystore.addCredential(credential, password);
+    
+    return singleCredentialKeystore.toString();
   };
 
   const importKeystore = (keystoreJson: string): boolean => {
@@ -124,7 +136,7 @@ export function KeystoreProvider({ children }: { children: ReactNode }) {
     hasStoredCredentials: storedCredentialsHashes.length > 0,
     storedCredentialsHashes,
     saveCredentials,
-    exportKeystore,
+    exportCredential,
     importKeystore,
     removeCredential
   };
