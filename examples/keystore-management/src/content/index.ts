@@ -1,9 +1,3 @@
-// Types for content structure
-type Link = {
-  text: string;
-  url: string;
-};
-
 export type ContentSegment = {
   type: 'text' | 'link';
   content: string;

@@ -10,6 +10,7 @@ import "@fontsource-variable/jetbrains-mono";
 import {  WalletProvider, RLNImplementationProvider, KeystoreProvider, RLNProvider } from "../contexts/index";
 import { Header } from "../components/Header";
 import { AppStateProvider } from "../contexts/AppStateContext";
+import { Footer } from "@/components/Footer";
 
 export const fontSans = FontSans({
   subsets: ["latin"],
@@ -53,11 +54,12 @@ export default function RootLayout({ children }: RootLayoutProps) {
               <RLNImplementationProvider>
                 <KeystoreProvider>
                   <RLNProvider>
-                    <div className="flex flex-col min-h-screen">
+                    <div className="relative flex min-h-screen flex-col">
                       <Header />
-                      <main className="flex-grow">
+                      <main className="flex-1 container mx-auto py-8">
                         {children}
                       </main>
+                      <Footer />
                     </div>
                     <Toaster />
                   </RLNProvider>
