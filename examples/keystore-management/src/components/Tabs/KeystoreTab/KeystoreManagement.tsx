@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { useKeystore } from '@/contexts/keystore';
 import { useRLN } from '@/contexts/rln';
-import { saveKeystoreToFile, readKeystoreFromFile } from '../../../utils/fileUtils';
-import { KeystoreEntity } from '@waku/rln';
+import { saveKeystoreToFile, readKeystoreFromFile } from '../../../utils/file';
+import { DecryptedCredentials } from '@waku/rln';
 import { useAppState } from '@/contexts/AppStateContext';
 
 export function KeystoreManagement() {
@@ -23,7 +23,7 @@ export function KeystoreManagement() {
   const [selectedCredential, setSelectedCredential] = useState<string | null>(null);
   const [viewPassword, setViewPassword] = useState<string>('');
   const [viewingCredential, setViewingCredential] = useState<string | null>(null);
-  const [decryptedInfo, setDecryptedInfo] = useState<KeystoreEntity | null>(null);
+  const [decryptedInfo, setDecryptedInfo] = useState<DecryptedCredentials | null>(null);
   const [isDecrypting, setIsDecrypting] = useState(false);
 
   React.useEffect(() => {
@@ -206,7 +206,38 @@ export function KeystoreManagement() {
                               </h4>
                               <div className="space-y-2">
                                 <pre className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto max-h-60">
-                                  {JSON.stringify(decryptedInfo, null, 2)}
+                                  <div className="grid grid-cols-1 gap-1">
+                                    <div className="flex flex-col">
+                                      <span className="font-semibold">ID Commitment:</span>
+                                      <span className="break-all">{decryptedInfo.identity.IDCommitment}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="font-semibold">ID Nullifier:</span>
+                                      <span className="break-all">{decryptedInfo.identity.IDNullifier}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="font-semibold">ID Secret Hash:</span>
+                                      <span className="break-all">{decryptedInfo.identity.IDSecretHash}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="font-semibold">Membership Address:</span>
+                                      <span className="break-all">{decryptedInfo.membership.address}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="font-semibold">Chain ID:</span>
+                                      <span>{decryptedInfo.membership.chainId}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="font-semibold">Tree Index:</span>
+                                      <span>{decryptedInfo.membership.treeIndex}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="font-semibold">Rate Limit:</span>
+                                      <span>{decryptedInfo.membership.rateLimit}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* {JSON.stringify(decryptedInfo, null, 2)} */}
                                 </pre>
                                 <button
                                   onClick={() => setDecryptedInfo(null)}

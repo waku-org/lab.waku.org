@@ -1,15 +1,15 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { KeystoreEntity } from '@waku/rln';
-import { createRLNImplementation, UnifiedRLNInstance } from './implementations';
+import { KeystoreEntity, RLNCredentialsManager } from '@waku/rln';
+import { createRLNImplementation } from './implementations';
 import { useRLNImplementation } from './RLNImplementationContext';
 import { ethers } from 'ethers';
 import { useKeystore } from '../keystore';
-import { ERC20_ABI, LINEA_SEPOLIA_CONFIG, ensureLineaSepoliaNetwork } from './utils/network';
+import { ERC20_ABI, LINEA_SEPOLIA_CONFIG, ensureLineaSepoliaNetwork } from '../../utils/network';
 
 interface RLNContextType {
-  rln: UnifiedRLNInstance | null;
+  rln: RLNCredentialsManager | null;
   isInitialized: boolean;
   isStarted: boolean;
   error: string | null;
@@ -32,7 +32,7 @@ const RLNContext = createContext<RLNContextType | undefined>(undefined);
 
 export function RLNProvider({ children }: { children: ReactNode }) {
   const { implementation } = useRLNImplementation();
-  const [rln, setRln] = useState<UnifiedRLNInstance | null>(null);
+  const [rln, setRln] = useState<RLNCredentialsManager | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -130,11 +130,15 @@ export function RLNProvider({ children }: { children: ReactNode }) {
           console.log("RLN started successfully, isStarted set to true");
 
           try {
-            const minLimit = await rln.contract.getMinRateLimit();
-            const maxLimit = await rln.contract.getMaxRateLimit();
-            setRateMinLimit(minLimit);
-            setRateMaxLimit(maxLimit);
-            console.log("Rate limits fetched:", { min: minLimit, max: maxLimit });
+            const minLimit = await rln.contract?.getMinRateLimit();
+            const maxLimit = await rln.contract?.getMaxRateLimit();
+            if (minLimit !== undefined && maxLimit !== undefined) {
+              setRateMinLimit(minLimit);
+              setRateMaxLimit(maxLimit);
+              console.log("Rate limits fetched:", { min: minLimit, max: maxLimit });
+            } else {
+              throw new Error("Rate limits not available");
+            }
           } catch (limitErr) {
             console.warn("Could not fetch rate limits:", limitErr);
           }
@@ -192,12 +196,15 @@ export function RLNProvider({ children }: { children: ReactNode }) {
           error: 'RLN not initialized or not started' 
         };
       }
-      const minLimit = await rln.contract.getMinRateLimit();
-      const maxLimit = await rln.contract.getMaxRateLimit();
-      
+      const minLimit = await rln.contract?.getMinRateLimit();
+      const maxLimit = await rln.contract?.getMaxRateLimit();
+      if (minLimit !== undefined && maxLimit !== undefined) {
       // Update state
       setRateMinLimit(minLimit);
       setRateMaxLimit(maxLimit);
+      } else {
+        throw new Error("Rate limits not available");
+      }
       
       return {
         success: true,
@@ -242,7 +249,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
           error: `Rate limit must be between ${rateMinLimit} and ${rateMaxLimit}` 
         };
       }
-      await rln.contract.setRateLimit(rateLimit);
+      await rln.contract?.setRateLimit(rateLimit);
       
       // Ensure we're on the correct network
       const isOnLineaSepolia = await ensureLineaSepoliaNetwork(signer);

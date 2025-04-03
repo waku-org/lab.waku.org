@@ -1,10 +1,10 @@
 "use client";
 
 import React, { Children, isValidElement } from 'react';
-import { TabNavigation, TabItem } from './Tabs/TabNavigation';
-import { useAppState } from '../contexts/AppStateContext';
+import { TabItem, TabNavigation } from './Tabs/TabNavigation';
+import { useAppState } from '@/contexts/AppStateContext';
 
-const tabs: TabItem[] = [
+const tabs: TabItem [] = [
   {
     id: 'membership',
     label: 'Membership Registration',
