@@ -1,6 +1,6 @@
 # Waku Keystore Management
 
-A simple Next.js application to manage Waku RLN keystores.
+Application to manage Waku RLN keystores.
 
 ## Overview
 
@@ -8,29 +8,14 @@ This application provides an interface for managing keystores for Waku's rate-li
 
 ## Features
 
-- Connect to MetaMask wallet
+- Connect to MetaMask wallet with dropdown menu for account details
+- Terminal-inspired UI with cyberpunk styling
 - View wallet information including address, network, and balance
 - Support for Linea Sepolia testnet only
-- Keystore management functionality
+- Keystore management with copy, view, export, and remove functionality
 - Token approval for RLN membership registration
+- Light/standard RLN implementation toggle
 
-## Getting Started
-
-1. First, install the dependencies:
-
-```bash
-npm install
-```
-
-2. Run the development server:
-
-```bash
-npm run dev
-```
-
-3. Open [http://localhost:3000](http://localhost:3000) with your browser.
-
-4. Connect your MetaMask wallet (Linea Sepolia testnet is required).
 
 ## Linea Sepolia Network
 
@@ -53,3 +38,9 @@ When registering for RLN membership, you'll need to complete two transactions:
 
 If you encounter an "ERC20: insufficient allowance" error, it means the token approval transaction was not completed successfully. Please try again and make sure to approve the token spending in your wallet.
 
+## TODO
+- [ ] add help type info on the webapp
+- [ ] update descriptions, and link specs/resources
+- [ ] footer for discord help
+- [ ] add info about exporting/using keystore/credential and using with nwaku/nwaku-compose/waku-simulator
+- [ x ] exporting entire keystore

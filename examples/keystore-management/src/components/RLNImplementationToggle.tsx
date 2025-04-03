@@ -1,42 +1,38 @@
 "use client";
 
-import { useRLNImplementation } from '@/contexts';
+import { useRLNImplementation } from '../contexts';
 import React from 'react';
+import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 
 export function RLNImplementationToggle() {
   const { implementation, setImplementation } = useRLNImplementation();
 
   return (
-    <div className="flex flex-col space-y-2">
-      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+    <div className="flex flex-col space-y-3">
+      <label className="text-sm font-mono text-muted-foreground">
         RLN Implementation
       </label>
-      <div className="flex space-x-4">
-        <button
-          onClick={() => setImplementation('light')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            implementation === 'light'
-              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-          }`}
-        >
+      
+      <ToggleGroup 
+        type="single" 
+        value={implementation} 
+        onValueChange={(value) => {
+          if (value) setImplementation(value as 'light' | 'standard');
+        }}
+        className="w-full max-w-md"
+      >
+        <ToggleGroupItem value="light" className="flex-1">
           Light
-        </button>
-        <button
-          onClick={() => setImplementation('standard')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            implementation === 'standard'
-              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-          }`}
-        >
+        </ToggleGroupItem>
+        <ToggleGroupItem value="standard" className="flex-1">
           Standard
-        </button>
-      </div>
-      <p className="text-xs text-gray-500 dark:text-gray-400">
+        </ToggleGroupItem>
+      </ToggleGroup>
+      
+      <p className="text-xs font-mono text-muted-foreground opacity-80">
         {implementation === 'light'
-          ? 'Light implementation, without Zerokit. Instant initalisation.'
-          : 'Standard implementation, with Zerokit. Initialisation takes 10-15 seconds for WASM module'
+          ? 'Light implementation, without Zerokit. Instant initialisation.'
+          : 'Standard implementation, with Zerokit. Initialisation takes 10-15 seconds for WASM module.'
         }
       </p>
     </div>
