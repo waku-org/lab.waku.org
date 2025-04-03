@@ -1,27 +1,13 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { KeystoreEntity } from '@waku/rln';
-import { UnifiedRLNInstance } from './RLNFactory';
+import { createRLNImplementation, UnifiedRLNInstance } from './implementations';
 import { useRLNImplementation } from './RLNImplementationContext';
-import { createRLNImplementation } from './RLNFactory';
 import { ethers } from 'ethers';
-import { useKeystore } from './KeystoreContext';
+import { useKeystore } from '../keystore';
+import { ERC20_ABI, LINEA_SEPOLIA_CONFIG, ensureLineaSepoliaNetwork } from './utils/network';
 
-// Constants for RLN membership registration
-const ERC20_ABI = [
-  "function allowance(address owner, address spender) view returns (uint256)",
-  "function approve(address spender, uint256 amount) returns (bool)",
-  "function balanceOf(address account) view returns (uint256)"
-];
-
-// Linea Sepolia configuration
-const LINEA_SEPOLIA_CONFIG = {
-  chainId: 59141,
-  tokenAddress: '0x185A0015aC462a0aECb81beCc0497b649a64B9ea'
-};
-
-// Define the context type
 interface RLNContextType {
   rln: UnifiedRLNInstance | null;
   isInitialized: boolean;
@@ -39,18 +25,18 @@ interface RLNContextType {
   getCurrentRateLimit: () => Promise<number | null>;
   getRateLimitsBounds: () => Promise<{ success: boolean; rateMinLimit: number; rateMaxLimit: number; error?: string }>;
   saveCredentialsToKeystore: (credentials: KeystoreEntity, password: string) => Promise<string>;
+  isLoading: boolean;
 }
 
-// Create the context
-const RLNUnifiedContext = createContext<RLNContextType | undefined>(undefined);
+const RLNContext = createContext<RLNContextType | undefined>(undefined);
 
-// Create the provider component
-export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
+export function RLNProvider({ children }: { children: ReactNode }) {
   const { implementation } = useRLNImplementation();
   const [rln, setRln] = useState<UnifiedRLNInstance | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Get the signer from window.ethereum
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
@@ -109,64 +95,17 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
     setError(null);
   }, [implementation]);
   
-  const ensureLineaSepoliaNetwork = async (): Promise<boolean> => {
-    try {
-      console.log("Current network: unknown", await signer?.getChainId());
-      
-      // Check if already on Linea Sepolia
-      if (await signer?.getChainId() === LINEA_SEPOLIA_CONFIG.chainId) {
-        console.log("Already on Linea Sepolia network");
-        return true;
-      }
-      
-      // If not on Linea Sepolia, try to switch
-      console.log("Not on Linea Sepolia, attempting to switch...");
-      
-      interface EthereumProvider {
-        request: (args: { 
-          method: string; 
-          params?: unknown[] 
-        }) => Promise<unknown>;
-      }
-      
-      // Get the provider from window.ethereum
-      const provider = window.ethereum as EthereumProvider | undefined;
-      
-      if (!provider) {
-        console.warn("No Ethereum provider found");
-        return false;
-      }
-      
-      try {
-        // Request network switch
-        await provider.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: `0x${LINEA_SEPOLIA_CONFIG.chainId.toString(16)}` }],
-        });
-        
-        console.log("Successfully switched to Linea Sepolia");
-        return true;
-      } catch (switchError: unknown) {
-        console.error("Error switching network:", switchError);
-        return false;
-      }
-    } catch (err) {
-      console.error("Error checking or switching network:", err);
-      return false;
-    }
-  };
-
-  const initializeRLN = async () => {
+  const initializeRLN = useCallback(async () => {
     console.log("InitializeRLN called. Connected:", isConnected, "Signer available:", !!signer);
     
     try {
       setError(null);
+      setIsLoading(true);
       
       if (!rln) {
         console.log(`Creating RLN ${implementation} instance...`);
         
         try {
-          // Use our factory to create the appropriate implementation
           const rlnInstance = await createRLNImplementation(implementation);
           
           console.log("RLN instance created successfully:", !!rlnInstance);
@@ -182,7 +121,6 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
         console.log("RLN instance already exists, skipping creation");
       }
       
-      // Start RLN if wallet is connected
       if (isConnected && signer && rln && !isStarted) {
         console.log("Starting RLN with signer...");
         try {          
@@ -215,8 +153,18 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Error in initializeRLN:', err);
       setError(err instanceof Error ? err.message : 'Failed to initialize RLN');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [isConnected, signer, implementation, rln, isStarted]);
+
+  // Auto-initialize effect for Light implementation
+  useEffect(() => {
+    if (implementation === 'light' && isConnected && signer && !isInitialized && !isStarted && !isLoading) {
+      console.log('Auto-initializing Light RLN implementation...');
+      initializeRLN();
+    }
+  }, [implementation, isConnected, signer, isInitialized, isStarted, isLoading, initializeRLN]);
 
   const getCurrentRateLimit = async (): Promise<number | null> => {
     try {
@@ -251,23 +199,21 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
       setRateMinLimit(minLimit);
       setRateMaxLimit(maxLimit);
       
-      return { 
-        success: true, 
-        rateMinLimit: minLimit, 
-        rateMaxLimit: maxLimit 
+      return {
+        success: true,
+        rateMinLimit: minLimit,
+        rateMaxLimit: maxLimit
       };
-    } catch (error) {
-      console.error("Error getting rate limits bounds:", error);
+    } catch (err) {
       return { 
         success: false, 
-        rateMinLimit: 0, 
-        rateMaxLimit: 0, 
-        error: 'Failed to get rate limits bounds' 
+        rateMinLimit: rateMinLimit, 
+        rateMaxLimit: rateMaxLimit, 
+        error: err instanceof Error ? err.message : 'Failed to get rate limits' 
       };
     }
-  }
+  };
 
-  // Save credentials to keystore
   const saveCredentialsToKeystore = async (credentials: KeystoreEntity, password: string): Promise<string> => {
     try {
       return await saveToKeystore(credentials, password);
@@ -277,13 +223,7 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Update registerMembership to optionally save credentials to keystore
-  const registerMembership = async (rateLimit: number, saveOptions?: { password: string }): Promise<{ 
-    success: boolean; 
-    error?: string; 
-    credentials?: KeystoreEntity;
-    keystoreHash?: string;
-  }> => {
+  const registerMembership = async (rateLimit: number, saveOptions?: { password: string }) => {
     console.log("registerMembership called with rate limit:", rateLimit);
     
     if (!rln || !isStarted) {
@@ -295,13 +235,6 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
     }
     
     try {
-      console.log("im here")
-      const rateMinLimit = await rln.contract.getMinRateLimit();
-      const rateMaxLimit = await rln.contract.getMaxRateLimit();
-      console.log({
-        rateMinLimit,
-        rateMaxLimit
-      })
       // Validate rate limit
       if (rateLimit < rateMinLimit || rateLimit > rateMaxLimit) {
         return { 
@@ -309,11 +242,10 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
           error: `Rate limit must be between ${rateMinLimit} and ${rateMaxLimit}` 
         };
       }
-      rln.contract.setRateLimit(rateLimit);
-      console.log("Rate limit set to:", rateLimit);
+      await rln.contract.setRateLimit(rateLimit);
       
       // Ensure we're on the correct network
-      const isOnLineaSepolia = await ensureLineaSepoliaNetwork();
+      const isOnLineaSepolia = await ensureLineaSepoliaNetwork(signer);
       if (!isOnLineaSepolia) {
         console.warn("Could not switch to Linea Sepolia network. Registration may fail.");
       }
@@ -343,111 +275,98 @@ export function RLNUnifiedProvider({ children }: { children: ReactNode }) {
       
       // Check and approve token allowance if needed
       const currentAllowance = await tokenContract.allowance(userAddress, contractAddress);
-      // Get membership fee - implementation may differ between standard and light
-      const membershipFee = await rln.contract.membershipFee?.() || ethers.utils.parseEther("0.01");
-      
-      if (currentAllowance.lt(membershipFee)) {
-        console.log("Approving token allowance...");
+      if (currentAllowance.eq(0)) {
+        console.log("Requesting token approval...");
+        
+        // Approve a large amount (max uint256)
+        const maxUint256 = ethers.constants.MaxUint256;
         
         try {
-          const approveTx = await tokenContract.approve(contractAddress, membershipFee);
-          await approveTx.wait();
-          console.log("Token allowance approved");
-        } catch (approveErr) {
-          console.error("Error approving token allowance:", approveErr);
-          return { success: false, error: "Failed to approve token allowance for membership registration." };
+          const approveTx = await tokenContract.approve(contractAddress, maxUint256);
+          console.log("Approval transaction submitted:", approveTx.hash);
+          
+          // Wait for the transaction to be mined
+          await approveTx.wait(1);
+          console.log("Token approval confirmed");
+        } catch (approvalErr) {
+          console.error("Error during token approval:", approvalErr);
+          return { 
+            success: false, 
+            error: `Failed to approve token: ${approvalErr instanceof Error ? approvalErr.message : String(approvalErr)}` 
+          };
         }
       } else {
         console.log("Token allowance already sufficient");
       }
       
-      // Register membership
-      console.log("Registering membership with rate limit:", rateLimit);
+      // Generate signature for identity
+      const timestamp = Date.now();
+      const message = `Sign this message to generate your RLN credentials ${timestamp}`;
+      const signature = await signer.signMessage(message);
       
-      try {
-        // Both implementations use registerMembership with a signature
-        // Generate signature for identity
-        const message = `Sign this message to generate your RLN credentials ${Date.now()}`;
-        const signature = await signer.signMessage(message);
-        
-        // Call registerMembership with the signature
-        const credentials = await rln.registerMembership({
-          signature: signature
-        }) as unknown as KeystoreEntity;
-        
-        // Validate credentials
-        if (!credentials) {
-          throw new Error("Failed to register membership: No credentials returned");
+      // Register membership
+      console.log("Registering membership...");
+      const credentials = await rln.registerMembership({
+        signature: signature
+      });
+      console.log("Credentials:", credentials);
+      
+      // If we have save options, save to keystore
+      let keystoreHash: string | undefined;
+      if (saveOptions && saveOptions.password && credentials) {
+        try {
+          const credentialsEntity = credentials as KeystoreEntity;
+          keystoreHash = await saveCredentialsToKeystore(credentialsEntity, saveOptions.password);
+          console.log("Credentials saved to keystore with hash:", keystoreHash);
+        } catch (saveErr) {
+          console.error("Error saving credentials to keystore:", saveErr);
+          // Continue without failing the overall registration
         }
-        if (!credentials.identity) {
-          throw new Error("Failed to register membership: Missing identity information");
-        }
-        if (!credentials.membership) {
-          throw new Error("Failed to register membership: Missing membership information");
-        }
-        
-        console.log("Membership registered successfully");
-        
-        // If saveOptions provided, save to keystore
-        let keystoreHash: string | undefined;
-        if (saveOptions?.password) {
-          try {
-            keystoreHash = await saveCredentialsToKeystore(credentials, saveOptions.password);
-            console.log("Credentials saved to keystore with hash:", keystoreHash);
-          } catch (keystoreErr) {
-            console.warn("Could not save credentials to keystore:", keystoreErr);
-          }
-        }
-        
-        return { 
-          success: true, 
-          credentials,
-          keystoreHash
-        };
-      } catch (registerErr) {
-        console.error("Error registering membership:", registerErr);
-        return { 
-          success: false, 
-          error: registerErr instanceof Error ? registerErr.message : "Failed to register membership" 
-        };
       }
-    } catch (err) {
-      console.error("Error in registerMembership:", err);
+      
       return { 
-        success: false, 
-        error: err instanceof Error ? err.message : "An unknown error occurred during registration" 
+        success: true, 
+        credentials: credentials as KeystoreEntity, 
+        keystoreHash 
       };
+    } catch (err) {
+      console.error("Error registering membership:", err);
+      
+      let errorMsg = "Failed to register membership";
+      if (err instanceof Error) {
+        errorMsg = err.message;
+      }
+      
+      return { success: false, error: errorMsg };
     }
   };
 
-  // Create the context value
-  const contextValue: RLNContextType = {
-    rln,
-    isInitialized,
-    isStarted,
-    error,
-    initializeRLN,
-    registerMembership,
-    getCurrentRateLimit,
-    getRateLimitsBounds,
-    rateMinLimit,
-    rateMaxLimit,
-    saveCredentialsToKeystore,
-  };
-
   return (
-    <RLNUnifiedContext.Provider value={contextValue}>
+    <RLNContext.Provider
+      value={{
+        rln,
+        isInitialized,
+        isStarted,
+        error,
+        initializeRLN,
+        registerMembership,
+        rateMinLimit,
+        rateMaxLimit,
+        getCurrentRateLimit,
+        getRateLimitsBounds,
+        saveCredentialsToKeystore: saveToKeystore,
+        isLoading
+      }}
+    >
       {children}
-    </RLNUnifiedContext.Provider>
+    </RLNContext.Provider>
   );
 }
 
-// Create a hook to use the context
 export function useRLN() {
-  const context = useContext(RLNUnifiedContext);
+  const context = useContext(RLNContext);
   if (context === undefined) {
-    throw new Error('useRLN must be used within a RLNUnifiedProvider');
+    throw new Error('useRLN must be used within a RLNProvider');
   }
   return context;
-}
-
+} 
