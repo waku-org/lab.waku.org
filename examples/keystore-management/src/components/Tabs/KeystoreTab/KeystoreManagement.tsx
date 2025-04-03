@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useKeystore } from '../../../contexts/keystore';
-import { useAppState } from '../../../contexts/AppStateContext';
-import { useRLN } from '../../../contexts/rln';
+import { useKeystore } from '@/contexts/keystore';
+import { useRLN } from '@/contexts/rln';
 import { saveKeystoreToFile, readKeystoreFromFile } from '../../../utils/fileUtils';
+import { KeystoreEntity } from '@waku/rln';
+import { useAppState } from '@/contexts/AppStateContext';
 
 export function KeystoreManagement() {
   const { 
@@ -13,12 +14,17 @@ export function KeystoreManagement() {
     error,
     exportCredential,
     importKeystore,
-    removeCredential
+    removeCredential,
+    getDecryptedCredential
   } = useKeystore();
   const { setGlobalError } = useAppState();
   const { isInitialized, isStarted } = useRLN();
   const [exportPassword, setExportPassword] = useState<string>('');
   const [selectedCredential, setSelectedCredential] = useState<string | null>(null);
+  const [viewPassword, setViewPassword] = useState<string>('');
+  const [viewingCredential, setViewingCredential] = useState<string | null>(null);
+  const [decryptedInfo, setDecryptedInfo] = useState<KeystoreEntity | null>(null);
+  const [isDecrypting, setIsDecrypting] = useState(false);
 
   React.useEffect(() => {
     if (error) {
@@ -60,6 +66,36 @@ export function KeystoreManagement() {
       setGlobalError(err instanceof Error ? err.message : 'Failed to remove credential');
     }
   };
+
+  const handleViewCredential = async (hash: string) => {
+    if (!viewPassword) {
+      setGlobalError('Please enter your keystore password to view credential');
+      return;
+    }
+    
+    setIsDecrypting(true);
+    
+    try {
+      const credential = await getDecryptedCredential(hash, viewPassword);
+      setIsDecrypting(false);
+      
+      if (credential) {
+        setDecryptedInfo(credential);
+      } else {
+        setGlobalError('Could not decrypt credential. Please check your password and try again.');
+      }
+    } catch (err) {
+      setIsDecrypting(false);
+      setGlobalError(err instanceof Error ? err.message : 'Failed to decrypt credential');
+    }
+  };
+
+  // Reset view state when changing credentials
+  React.useEffect(() => {
+    if (viewingCredential !== selectedCredential) {
+      setDecryptedInfo(null);
+    }
+  }, [viewingCredential, selectedCredential]);
 
   return (
     <div className="space-y-6">
@@ -108,7 +144,22 @@ export function KeystoreManagement() {
                         </code>
                         <div className="flex space-x-2">
                           <button
-                            onClick={() => setSelectedCredential(hash === selectedCredential ? null : hash)}
+                            onClick={() => {
+                              setViewingCredential(hash === viewingCredential ? null : hash);
+                              setSelectedCredential(null);
+                              setViewPassword('');
+                              setDecryptedInfo(null);
+                            }}
+                            className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedCredential(hash === selectedCredential ? null : hash);
+                              setViewingCredential(null);
+                              setExportPassword('');
+                            }}
                             className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                           >
                             Export
@@ -122,6 +173,54 @@ export function KeystoreManagement() {
                         </div>
                       </div>
                       
+                      {/* View Credential Section */}
+                      {viewingCredential === hash && (
+                        <div className="mt-2 space-y-2">
+                          <div className="flex gap-2">
+                            <input
+                              type="password"
+                              value={viewPassword}
+                              onChange={(e) => setViewPassword(e.target.value)}
+                              placeholder="Enter keystore password"
+                              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                              disabled={isDecrypting}
+                            />
+                            <button
+                              onClick={() => handleViewCredential(hash)}
+                              disabled={!viewPassword || isDecrypting}
+                              className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${
+                                !viewPassword || isDecrypting
+                                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400'
+                                  : 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500'
+                              }`}
+                            >
+                              {isDecrypting ? 'Decrypting...' : 'Decrypt'}
+                            </button>
+                          </div>
+                          
+                          {/* Decrypted Information Display */}
+                          {decryptedInfo && (
+                            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+                              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Decrypted Credential Information
+                              </h4>
+                              <div className="space-y-2">
+                                <pre className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto max-h-60">
+                                  {JSON.stringify(decryptedInfo, null, 2)}
+                                </pre>
+                                <button
+                                  onClick={() => setDecryptedInfo(null)}
+                                  className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                                >
+                                  Hide Details
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Export Credential Section */}
                       {selectedCredential === hash && (
                         <div className="mt-2 space-y-2">
                           <input

@@ -14,6 +14,7 @@ interface KeystoreContextType {
   exportCredential: (hash: string, password: string) => Promise<string>;
   importKeystore: (keystoreJson: string) => boolean;
   removeCredential: (hash: string) => void;
+  getDecryptedCredential: (hash: string, password: string) => Promise<KeystoreEntity | null>;
 }
 
 // Create the context
@@ -82,6 +83,21 @@ export function KeystoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const getDecryptedCredential = async (hash: string, password: string): Promise<KeystoreEntity | null> => {
+    if (!keystore) {
+      throw new Error("Keystore not initialized");
+    }
+
+    try {
+      // Get the credential from the keystore
+      const credential = await keystore.readCredential(hash, password);
+      return credential || null;
+    } catch (err) {
+      console.error("Error reading credential:", err);
+      throw err;
+    }
+  };
+
   const exportCredential = async (hash: string, password: string): Promise<string> => {
     if (!keystore) {
       throw new Error("Keystore not initialized");
@@ -138,7 +154,8 @@ export function KeystoreProvider({ children }: { children: ReactNode }) {
     saveCredentials,
     exportCredential,
     importKeystore,
-    removeCredential
+    removeCredential,
+    getDecryptedCredential
   };
 
   return (
