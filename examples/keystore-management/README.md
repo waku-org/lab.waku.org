@@ -44,3 +44,4 @@ If you encounter an "ERC20: insufficient allowance" error, it means the token ap
 - [ ] footer for discord help
 - [ ] add info about exporting/using keystore/credential and using with nwaku/nwaku-compose/waku-simulator
 - [ x ] exporting entire keystore
+- [ ] clean comments

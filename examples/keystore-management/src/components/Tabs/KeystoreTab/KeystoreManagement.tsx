@@ -2,13 +2,14 @@
 
 import React, { useState } from 'react';
 import { useKeystore } from '../../../contexts/keystore';
-import {  readKeystoreFromFile, saveKeystoreCredentialToFile } from '../../../utils/keystore';
+import { readKeystoreFromFile, saveKeystoreCredentialToFile } from '../../../utils/keystore';
 import { DecryptedCredentials } from '@waku/rln';
 import { useAppState } from '../../../contexts/AppStateContext';
 import { TerminalWindow } from '../../ui/terminal-window';
 import { Button } from '../../ui/button';
 import { Copy, Eye, Download, Trash2, ArrowDownToLine } from 'lucide-react';
 import { KeystoreExporter } from '../../KeystoreExporter';
+import { keystoreManagement, type ContentSegment } from '../../../content/index';
 
 export function KeystoreManagement() {
   const { 
@@ -116,7 +117,7 @@ export function KeystoreManagement() {
     <div className="space-y-6">
       <TerminalWindow className="w-full">
         <h2 className="text-lg font-mono font-medium text-primary mb-4 cursor-blink">
-          Keystore Management
+          {keystoreManagement.title}
         </h2>
         <div className="space-y-6">
           <div className="flex flex-wrap gap-3">
@@ -127,7 +128,7 @@ export function KeystoreManagement() {
             >
               <span className="relative z-10 flex items-center">
                 <ArrowDownToLine className="w-4 h-4 mr-2" />
-                Import Keystore
+                {keystoreManagement.buttons.import}
               </span>
               <span className="absolute inset-0 bg-primary/10 transform translate-y-full group-hover:translate-y-0 transition-transform duration-200"></span>
             </Button>
@@ -140,15 +141,67 @@ export function KeystoreManagement() {
             <div className="my-4 p-3 border border-warning-DEFAULT/20 bg-warning-DEFAULT/5 rounded">
               <p className="text-sm text-warning-DEFAULT font-mono flex items-center">
                 <span className="mr-2">⚠️</span>
-                Please initialize RLN before managing credentials
+                {keystoreManagement.noCredentialsWarning}
               </p>
             </div>
           )}
           
+          {/* About Section */}
+          <div className="border-t border-terminal-border pt-4 mt-4">
+            <div className="flex items-center mb-3">
+              <span className="text-primary font-mono font-medium mr-2">{">"}</span>
+              <h3 className="text-md font-mono font-semibold text-primary">
+                {keystoreManagement.infoHeader}
+              </h3>
+            </div>
+            
+            <div className="space-y-3">
+              {keystoreManagement.about.map((paragraph: ContentSegment[], i: number) => (
+                <p key={i} className="text-sm text-foreground mb-2 opacity-90">
+                  {paragraph.map((segment: ContentSegment, j: number) => (
+                    segment.type === 'link' ? (
+                      <a 
+                        key={j}
+                        href={segment.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        {segment.content}
+                      </a>
+                    ) : (
+                      <span key={j}>{segment.content}</span>
+                    )
+                  ))}
+                </p>
+              ))}
+            </div>
+          </div>
+
+          {/* Resources Section */}
+          <div className="border-t border-terminal-border pt-4">
+            <h3 className="text-md font-mono font-semibold text-primary mb-3">
+              {keystoreManagement.resources.title}
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              {keystoreManagement.resources.links.map((link: { name: string; url: string }, i: number) => (
+                <a
+                  key={i}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline text-sm"
+                >
+                  {link.name}
+                </a>
+              ))}
+            </div>
+          </div>
+          
           {/* Stored Credentials */}
           <div className="border-t border-terminal-border pt-6">
             <h3 className="text-sm font-mono font-medium text-muted-foreground mb-4">
-              Stored Credentials
+              {keystoreManagement.storedCredentialsTitle}
             </h3>
             
             {hasStoredCredentials ? (
@@ -189,7 +242,7 @@ export function KeystoreManagement() {
                             className="text-accent hover:text-accent hover:border-accent flex items-center gap-1 py-1"
                           >
                             <Eye className="w-3 h-3" />
-                            <span>View</span>
+                            <span>{keystoreManagement.buttons.view}</span>
                           </Button>
                           <Button
                             onClick={() => {

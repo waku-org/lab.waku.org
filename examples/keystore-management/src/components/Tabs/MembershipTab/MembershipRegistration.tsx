@@ -10,6 +10,7 @@ import { RLNInitButton } from '../../RLNinitButton';
 import { TerminalWindow } from '../../ui/terminal-window';
 import { Slider } from '../../ui/slider';
 import { Button } from '../../ui/button';
+import { membershipRegistration, type ContentSegment } from '../../../content/index';
 
 export function MembershipRegistration() {
   const { setGlobalError } = useAppState();
@@ -101,7 +102,7 @@ export function MembershipRegistration() {
     <div className="space-y-6 max-w-full">
       <TerminalWindow className="w-full">
         <h2 className="text-lg font-mono font-medium text-primary mb-4 cursor-blink">
-          RLN Membership Registration
+          {membershipRegistration.title}
         </h2>
         <div className="space-y-6">
           <div className="border-b border-terminal-border pb-6">
@@ -113,35 +114,43 @@ export function MembershipRegistration() {
             <div className="mb-4 p-3 border border-destructive/20 bg-destructive/5 rounded">
               <p className="text-sm text-destructive font-mono flex items-center">
                 <span className="mr-2">⚠️</span>
-                <span>You are not connected to Linea Sepolia network. Please switch networks to register.</span>
+                <span>{membershipRegistration.networkWarning}</span>
               </p>
             </div>
           )}
           
-          {/* Informational Box - Now part of main terminal */}
+          {/* Informational Box */}
           <div className="border-t border-terminal-border pt-4 mt-4">
             <div className="flex items-center mb-3">
               <span className="text-primary font-mono font-medium mr-2">{">"}</span>
               <h3 className="text-md font-mono font-semibold text-primary">
-                RLN Membership Info
+                {membershipRegistration.infoHeader}
               </h3>
             </div>
             
             <div className="space-y-3">
               <h4 className="text-md font-mono font-semibold text-primary cursor-blink">
-                About RLN Membership on Linea Sepolia
+                {membershipRegistration.aboutTitle}
               </h4>
-              <p className="text-sm text-foreground mb-2 opacity-90">
-                RLN (Rate Limiting Nullifier) membership allows you to participate in Waku RLN Relay with rate limiting protection,
-                without exposing your private keys on your node.
-              </p>
-              <p className="text-sm text-foreground mb-2 opacity-90">
-                This application is configured to use the <span className="text-primary">Linea Sepolia</span> testnet for RLN registrations.
-              </p>
-              <p className="text-sm text-foreground opacity-90">
-                When you register, your wallet will sign a message that will be used to generate a cryptographic identity
-                for your membership. This allows your node to prove it has permission to send messages without revealing your identity.
-              </p>
+              {membershipRegistration.about.map((paragraph: ContentSegment[], i: number) => (
+                <p key={i} className="text-sm text-foreground mb-2 opacity-90">
+                  {paragraph.map((segment: ContentSegment, j: number) => (
+                    segment.type === 'link' ? (
+                      <a 
+                        key={j}
+                        href={segment.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        {segment.content}
+                      </a>
+                    ) : (
+                      <span key={j}>{segment.content}</span>
+                    )
+                  ))}
+                </p>
+              ))}
             </div>
           </div>
 
@@ -153,12 +162,12 @@ export function MembershipRegistration() {
             {!isConnected ? (
               <div className="text-warning-DEFAULT font-mono text-sm mt-4 flex items-center">
                 <span className="mr-2">ℹ️</span>
-                Please connect your wallet to register a membership
+                {membershipRegistration.connectWalletPrompt}
               </div>
             ) : !isInitialized || !isStarted ? (
               <div className="text-warning-DEFAULT font-mono text-sm mt-4 flex items-center">
                 <span className="mr-2">ℹ️</span>
-                Please initialize RLN before registering a membership
+                {membershipRegistration.initializePrompt}
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -167,7 +176,7 @@ export function MembershipRegistration() {
                     htmlFor="rateLimit" 
                     className="block text-sm font-mono text-muted-foreground mb-2"
                   >
-                    Rate Limit (messages per epoch)
+                    {membershipRegistration.form.rateLimitLabel}
                   </label>
                   <div className="flex items-center space-x-4 py-2">
                     <Slider
@@ -197,24 +206,25 @@ export function MembershipRegistration() {
                       htmlFor="saveToKeystore"
                       className="ml-2 text-sm font-mono text-foreground"
                     >
-                      Save credentials to keystore
+                      {membershipRegistration.form.saveToKeystoreLabel}
                     </label>
                   </div>
+
                   {saveToKeystore && (
                     <div>
                       <label
                         htmlFor="keystorePassword"
-                        className="block text-sm font-mono text-muted-foreground mb-1"
+                        className="block text-sm font-mono text-muted-foreground mb-2"
                       >
-                        Keystore Password (min 8 characters)
+                        {membershipRegistration.form.passwordLabel}
                       </label>
                       <input
                         type="password"
                         id="keystorePassword"
                         value={keystorePassword}
                         onChange={(e) => setKeystorePassword(e.target.value)}
-                        className="w-full px-3 py-2 border border-terminal-border rounded-md bg-terminal-background text-foreground font-mono focus:ring-1 focus:ring-primary focus:border-primary text-sm"
-                        placeholder="Enter password to encrypt credentials"
+                        placeholder={membershipRegistration.form.passwordPlaceholder}
+                        className="w-full px-3 py-2 bg-terminal-background border border-terminal-border rounded-md text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
                   )}
@@ -222,11 +232,10 @@ export function MembershipRegistration() {
 
                 <Button
                   type="submit"
-                  disabled={isRegistering || !isLineaSepolia || (saveToKeystore && !keystorePassword)}
-                  variant={isRegistering ? "outline" : "default"}
+                  disabled={isRegistering}
                   className="w-full"
                 >
-                  {isRegistering ? 'Registering...' : 'Register Membership'}
+                  {isRegistering ? membershipRegistration.form.registeringButton : membershipRegistration.form.registerButton}
                 </Button>
               </form>
             )}
