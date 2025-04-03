@@ -39,8 +39,4 @@ When registering for RLN membership, you'll need to complete two transactions:
 If you encounter an "ERC20: insufficient allowance" error, it means the token approval transaction was not completed successfully. Please try again and make sure to approve the token spending in your wallet.
 
 ## TODO
-- [ ] add help type info on the webapp
-- [ ] update descriptions, and link specs/resources
-- [x] footer for discord help
-- [ ] add info about exporting/using keystore/credential and using with nwaku/nwaku-compose/waku-simulator
-- [x] exporting entire keystore
+- [ ] add info about using with nwaku/nwaku-compose/waku-simulator
