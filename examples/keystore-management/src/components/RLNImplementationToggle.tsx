@@ -1,50 +1,44 @@
 "use client";
 
-import { useRLNImplementation, RLNImplementationType } from '../contexts/RLNImplementationContext';
+import React from 'react';
+import { useRLNImplementation } from '../contexts/rln';
 
 export function RLNImplementationToggle() {
   const { implementation, setImplementation } = useRLNImplementation();
 
-  const handleToggle = (newImplementation: RLNImplementationType) => {
-    setImplementation(newImplementation);
-  };
-
   return (
-    <div className="flex items-center space-x-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-        RLN Implementation:
-      </span>
-      <div className="flex rounded-md shadow-sm" role="group">
+    <div className="flex flex-col space-y-2">
+      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        RLN Implementation
+      </label>
+      <div className="flex space-x-4">
         <button
-          type="button"
-          onClick={() => handleToggle('standard')}
-          className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
-            implementation === 'standard'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
-          }`}
-        >
-          Standard
-        </button>
-        <button
-          type="button"
-          onClick={() => handleToggle('light')}
-          className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
+          onClick={() => setImplementation('light')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             implementation === 'light'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
           }`}
         >
           Light
         </button>
+        <button
+          onClick={() => setImplementation('standard')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            implementation === 'standard'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+          }`}
+        >
+          Standard
+        </button>
       </div>
-      <div className="text-xs text-gray-500 dark:text-gray-400">
-        {implementation === 'standard' ? (
-          <span>Using full RLN implementation</span>
-        ) : (
-          <span>Using lightweight RLN implementation</span>
-        )}
-      </div>
+      <p className="text-xs text-gray-500 dark:text-gray-400">
+        {implementation === 'light'
+          ? 'Light implementation, without Zerokit. Instant initalisation.'
+          : 'Standard implementation, with Zerokit. Initialisation takes 10-15 seconds for WASM module'
+        }
+      </p>
     </div>
   );
 }
