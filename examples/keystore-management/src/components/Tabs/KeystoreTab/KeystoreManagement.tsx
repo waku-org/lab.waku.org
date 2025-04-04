@@ -1,11 +1,15 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useKeystore } from '@/contexts/keystore';
-import { useRLN } from '@/contexts/rln';
-import { saveKeystoreToFile, readKeystoreFromFile } from '../../../utils/file';
+import { useKeystore } from '../../../contexts/keystore';
+import { readKeystoreFromFile, saveKeystoreCredentialToFile } from '../../../utils/keystore';
 import { DecryptedCredentials } from '@waku/rln';
-import { useAppState } from '@/contexts/AppStateContext';
+import { useAppState } from '../../../contexts/AppStateContext';
+import { TerminalWindow } from '../../ui/terminal-window';
+import { Button } from '../../ui/button';
+import { Copy, Eye, Download, Trash2, ArrowDownToLine } from 'lucide-react';
+import { KeystoreExporter } from '../../KeystoreExporter';
+import { keystoreManagement, type ContentSegment } from '../../../content/index';
 
 export function KeystoreManagement() {
   const { 
@@ -18,13 +22,13 @@ export function KeystoreManagement() {
     getDecryptedCredential
   } = useKeystore();
   const { setGlobalError } = useAppState();
-  const { isInitialized, isStarted } = useRLN();
   const [exportPassword, setExportPassword] = useState<string>('');
   const [selectedCredential, setSelectedCredential] = useState<string | null>(null);
   const [viewPassword, setViewPassword] = useState<string>('');
   const [viewingCredential, setViewingCredential] = useState<string | null>(null);
   const [decryptedInfo, setDecryptedInfo] = useState<DecryptedCredentials | null>(null);
   const [isDecrypting, setIsDecrypting] = useState(false);
+  const [copiedHash, setCopiedHash] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (error) {
@@ -32,14 +36,14 @@ export function KeystoreManagement() {
     }
   }, [error, setGlobalError]);
 
-  const handleExportCredential = async (hash: string) => {
+  const handleExportKeystoreCredential = async (hash: string) => {
     try {
       if (!exportPassword) {
         setGlobalError('Please enter your keystore password to export');
         return;
       }
-      const keystoreJson = await exportCredential(hash, exportPassword);
-      saveKeystoreToFile(keystoreJson, `waku-rln-credential-${hash.slice(0, 8)}.json`);
+      const keystore = await exportCredential(hash, exportPassword);
+      saveKeystoreCredentialToFile(keystore);
       setExportPassword('');
       setSelectedCredential(null);
     } catch (err) {
@@ -47,10 +51,10 @@ export function KeystoreManagement() {
     }
   };
 
-  const handleImport = async () => {
+  const handleImportKeystore = async () => {
     try {
-      const keystoreJson = await readKeystoreFromFile();
-      const success = importKeystore(keystoreJson);
+      const keystore = await readKeystoreFromFile();
+      const success = importKeystore(keystore);
       if (!success) {
         setGlobalError('Failed to import keystore');
       }
@@ -97,37 +101,107 @@ export function KeystoreManagement() {
     }
   }, [viewingCredential, selectedCredential]);
 
+  // Add a function to copy text to clipboard with visual feedback
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        setCopiedHash(text);
+        setTimeout(() => setCopiedHash(null), 2000);
+      })
+      .catch(err => {
+        console.error('Failed to copy: ', err);
+      });
+  };
+
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
-        <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-          Keystore Management
+      <TerminalWindow className="w-full">
+        <h2 className="text-lg font-mono font-medium text-primary mb-4 cursor-blink">
+          {keystoreManagement.title}
         </h2>
-        
         <div className="space-y-6">
-          {/* Import Action */}
-          <div>
-            <button
-              onClick={handleImport}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+          <div className="flex flex-wrap gap-3">
+            <Button 
+              onClick={handleImportKeystore} 
+              variant="terminal"
+              className="group relative overflow-hidden"
             >
-              Import Keystore
-            </button>
+              <span className="relative z-10 flex items-center">
+                <ArrowDownToLine className="w-4 h-4 mr-2" />
+                {keystoreManagement.buttons.import}
+              </span>
+              <span className="absolute inset-0 bg-primary/10 transform translate-y-full group-hover:translate-y-0 transition-transform duration-200"></span>
+            </Button>
+            
+            <KeystoreExporter />
           </div>
-
-          {/* RLN Status */}
-          {!isInitialized || !isStarted ? (
-            <div className="bg-yellow-50 dark:bg-yellow-900 p-4 rounded-lg">
-              <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                ⚠️ Please initialize RLN before managing credentials
+          
+          {/* Warning - RLN not initialized */}
+          {!hasStoredCredentials && (
+            <div className="my-4 p-3 border border-warning-DEFAULT/20 bg-warning-DEFAULT/5 rounded">
+              <p className="text-sm text-warning-DEFAULT font-mono flex items-center">
+                <span className="mr-2">⚠️</span>
+                {keystoreManagement.noCredentialsWarning}
               </p>
             </div>
-          ) : null}
+          )}
+          
+          {/* About Section */}
+          <div className="border-t border-terminal-border pt-4 mt-4">
+            <div className="flex items-center mb-3">
+              <span className="text-primary font-mono font-medium mr-2">{">"}</span>
+              <h3 className="text-md font-mono font-semibold text-primary">
+                {keystoreManagement.infoHeader}
+              </h3>
+            </div>
+            
+            <div className="space-y-3">
+              {keystoreManagement.about.map((paragraph: ContentSegment[], i: number) => (
+                <p key={i} className="text-sm text-foreground mb-2 opacity-90">
+                  {paragraph.map((segment: ContentSegment, j: number) => (
+                    segment.type === 'link' ? (
+                      <a 
+                        key={j}
+                        href={segment.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        {segment.content}
+                      </a>
+                    ) : (
+                      <span key={j}>{segment.content}</span>
+                    )
+                  ))}
+                </p>
+              ))}
+            </div>
+          </div>
 
+          {/* Resources Section */}
+          <div className="border-t border-terminal-border pt-4">
+            <h3 className="text-md font-mono font-semibold text-primary mb-3">
+              {keystoreManagement.resources.title}
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              {keystoreManagement.resources.links.map((link: { name: string; url: string }, i: number) => (
+                <a
+                  key={i}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline text-sm"
+                >
+                  {link.name}
+                </a>
+              ))}
+            </div>
+          </div>
+          
           {/* Stored Credentials */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-              Stored Credentials
+          <div className="border-t border-terminal-border pt-6">
+            <h3 className="text-sm font-mono font-medium text-muted-foreground mb-4">
+              {keystoreManagement.storedCredentialsTitle}
             </h3>
             
             {hasStoredCredentials ? (
@@ -135,116 +209,149 @@ export function KeystoreManagement() {
                 {storedCredentialsHashes.map((hash) => (
                   <div 
                     key={hash} 
-                    className="p-4 rounded-lg border border-gray-200 dark:border-gray-700"
+                    className="p-4 rounded-md border border-terminal-border bg-terminal-background/30 hover:border-terminal-border/80 transition-colors"
                   >
                     <div className="flex flex-col space-y-3">
-                      <div className="flex items-start justify-between">
-                        <code className="text-sm text-gray-600 dark:text-gray-400 break-all">
-                          {hash}
-                        </code>
-                        <div className="flex space-x-2">
-                          <button
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <code className="text-sm text-muted-foreground font-mono">
+                            {hash.slice(0, 10)}...{hash.slice(-6)}
+                          </code>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className={`h-6 w-6 p-0 ${copiedHash === hash ? 'text-success-DEFAULT' : 'text-muted-foreground hover:text-primary'}`}
+                            onClick={() => copyToClipboard(hash)}
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                          {copiedHash === hash && (
+                            <span className="text-xs text-success-DEFAULT">Copied!</span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
                             onClick={() => {
                               setViewingCredential(hash === viewingCredential ? null : hash);
                               setSelectedCredential(null);
                               setViewPassword('');
                               setDecryptedInfo(null);
                             }}
-                            className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                            variant="outline"
+                            size="sm"
+                            className="text-accent hover:text-accent hover:border-accent flex items-center gap-1 py-1"
                           >
-                            View
-                          </button>
-                          <button
+                            <Eye className="w-3 h-3" />
+                            <span>{keystoreManagement.buttons.view}</span>
+                          </Button>
+                          <Button
                             onClick={() => {
                               setSelectedCredential(hash === selectedCredential ? null : hash);
                               setViewingCredential(null);
                               setExportPassword('');
                             }}
-                            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                            variant="outline"
+                            size="sm"
+                            className="text-primary hover:text-primary hover:border-primary flex items-center gap-1 py-1"
                           >
-                            Export
-                          </button>
-                          <button
+                            <Download className="w-3 h-3" />
+                            <span>Export</span>
+                          </Button>
+                          <Button
                             onClick={() => handleRemoveCredential(hash)}
-                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:border-destructive flex items-center gap-1 py-1"
                           >
-                            Remove
-                          </button>
+                            <Trash2 className="w-3 h-3" />
+                            <span>Remove</span>
+                          </Button>
                         </div>
                       </div>
                       
                       {/* View Credential Section */}
                       {viewingCredential === hash && (
-                        <div className="mt-2 space-y-2">
+                        <div className="mt-3 space-y-3 border-t border-terminal-border/40 pt-3 animate-in fade-in-50 duration-300">
                           <div className="flex gap-2">
                             <input
                               type="password"
                               value={viewPassword}
                               onChange={(e) => setViewPassword(e.target.value)}
-                              placeholder="Enter keystore password"
-                              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                              placeholder="Enter credential password"
+                              className="flex-1 px-3 py-2 border border-terminal-border rounded-md bg-terminal-background text-foreground font-mono focus:ring-1 focus:ring-accent focus:border-accent text-sm"
                               disabled={isDecrypting}
                             />
-                            <button
+                            <Button
                               onClick={() => handleViewCredential(hash)}
                               disabled={!viewPassword || isDecrypting}
-                              className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${
-                                !viewPassword || isDecrypting
-                                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400'
-                                  : 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500'
-                              }`}
+                              variant="terminal"
+                              size="sm"
                             >
                               {isDecrypting ? 'Decrypting...' : 'Decrypt'}
-                            </button>
+                            </Button>
                           </div>
                           
                           {/* Decrypted Information Display */}
                           {decryptedInfo && (
-                            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Decrypted Credential Information
-                              </h4>
-                              <div className="space-y-2">
-                                <pre className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto max-h-60">
-                                  <div className="grid grid-cols-1 gap-1">
-                                    <div className="flex flex-col">
-                                      <span className="font-semibold">ID Commitment:</span>
-                                      <span className="break-all">{decryptedInfo.identity.IDCommitment}</span>
-                                    </div>
-                                    <div className="flex flex-col">
-                                      <span className="font-semibold">ID Nullifier:</span>
-                                      <span className="break-all">{decryptedInfo.identity.IDNullifier}</span>
-                                    </div>
-                                    <div className="flex flex-col">
-                                      <span className="font-semibold">ID Secret Hash:</span>
-                                      <span className="break-all">{decryptedInfo.identity.IDSecretHash}</span>
-                                    </div>
-                                    <div className="flex flex-col">
-                                      <span className="font-semibold">Membership Address:</span>
-                                      <span className="break-all">{decryptedInfo.membership.address}</span>
-                                    </div>
-                                    <div className="flex flex-col">
-                                      <span className="font-semibold">Chain ID:</span>
-                                      <span>{decryptedInfo.membership.chainId}</span>
-                                    </div>
-                                    <div className="flex flex-col">
-                                      <span className="font-semibold">Tree Index:</span>
-                                      <span>{decryptedInfo.membership.treeIndex}</span>
-                                    </div>
-                                    <div className="flex flex-col">
-                                      <span className="font-semibold">Rate Limit:</span>
-                                      <span>{decryptedInfo.membership.rateLimit}</span>
+                            <div className="mt-3 space-y-2 border-t border-terminal-border/40 pt-3 animate-in fade-in-50 duration-300">
+                              <div className="flex items-center mb-2">
+                                <span className="text-primary font-mono font-medium mr-2">{">"}</span>
+                                <h3 className="text-sm font-mono font-semibold text-primary">
+                                  Credential Details
+                                </h3>
+                              </div>
+                              <div className="space-y-2 text-xs font-mono">
+                                <div className="grid grid-cols-1 gap-2">
+                                  <div className="flex flex-col">
+                                    <span className="text-muted-foreground">ID Commitment:</span>
+                                    <div className="flex items-center mt-1">
+                                      <span className="break-all text-accent truncate">{decryptedInfo.identity.IDCommitment}</span>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-5 w-5 p-0 ml-1 text-muted-foreground hover:text-accent"
+                                        onClick={() => copyToClipboard(decryptedInfo.identity.IDCommitment.toString())}
+                                      >
+                                        <Copy className="h-3 w-3" />
+                                      </Button>
                                     </div>
                                   </div>
-
-                                  {/* {JSON.stringify(decryptedInfo, null, 2)} */}
-                                </pre>
-                                <button
+                                  <div className="flex flex-col border-t border-terminal-border/20 pt-2">
+                                    <span className="text-muted-foreground">ID Nullifier:</span>
+                                    <div className="flex items-center mt-1">
+                                      <span className="break-all text-accent truncate">{decryptedInfo.identity.IDNullifier}</span>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-5 w-5 p-0 ml-1 text-muted-foreground hover:text-accent"
+                                        onClick={() => copyToClipboard(decryptedInfo.identity.IDNullifier.toString())}
+                                      >
+                                        <Copy className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col border-t border-terminal-border/20 pt-2">
+                                    <span className="text-muted-foreground">Membership Details:</span>
+                                    <div className="grid grid-cols-2 gap-4 mt-2">
+                                      <div>
+                                        <span className="text-muted-foreground text-xs">Chain ID:</span>
+                                        <div className="text-accent">{decryptedInfo.membership.chainId}</div>
+                                      </div>
+                                      <div>
+                                        <span className="text-muted-foreground text-xs">Rate Limit:</span>
+                                        <div className="text-accent">{decryptedInfo.membership.rateLimit}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <Button
                                   onClick={() => setDecryptedInfo(null)}
-                                  className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="mt-2 text-xs text-muted-foreground hover:text-accent"
                                 >
                                   Hide Details
-                                </button>
+                                </Button>
                               </div>
                             </div>
                           )}
@@ -253,20 +360,24 @@ export function KeystoreManagement() {
                       
                       {/* Export Credential Section */}
                       {selectedCredential === hash && (
-                        <div className="mt-2 space-y-2">
+                        <div className="mt-3 space-y-3 border-t border-terminal-border/40 pt-3 animate-in fade-in-50 duration-300">
                           <input
                             type="password"
                             value={exportPassword}
                             onChange={(e) => setExportPassword(e.target.value)}
                             placeholder="Enter keystore password"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            className="w-full px-3 py-2 border border-terminal-border rounded-md bg-terminal-background text-foreground font-mono focus:ring-1 focus:ring-primary focus:border-primary text-sm"
                           />
-                          <button
-                            onClick={() => handleExportCredential(hash)}
-                            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                          <Button
+                            onClick={() => handleExportKeystoreCredential(hash)}
+                            variant="default"
+                            size="sm"
+                            className="w-full font-mono"
+                            disabled={!exportPassword}
                           >
+                            <Download className="w-3 h-3 mr-1" />
                             Export Credential
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -274,13 +385,13 @@ export function KeystoreManagement() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="text-sm text-muted-foreground font-mono bg-terminal-background/30 p-4 border border-terminal-border/50 rounded-md text-center">
                 No credentials stored
-              </p>
+              </div>
             )}
           </div>
         </div>
-      </div>
+      </TerminalWindow>
     </div>
   );
 } 

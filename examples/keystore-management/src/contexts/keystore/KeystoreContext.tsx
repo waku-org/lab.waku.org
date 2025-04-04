@@ -12,8 +12,9 @@ interface KeystoreContextType {
   hasStoredCredentials: boolean;
   storedCredentialsHashes: string[];
   saveCredentials: (credentials: KeystoreEntity, password: string) => Promise<string>;
-  exportCredential: (hash: string, password: string) => Promise<string>;
-  importKeystore: (keystoreJson: string) => boolean;
+  exportCredential: (hash: string, password: string) => Promise<Keystore>;
+  exportEntireKeystore: (password: string) => Promise<void>;
+  importKeystore: (keystore: Keystore) => boolean;
   removeCredential: (hash: string) => void;
   getDecryptedCredential: (hash: string, password: string) => Promise<KeystoreEntity | null>;
 }
@@ -97,7 +98,7 @@ export function KeystoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const exportCredential = async (hash: string, password: string): Promise<string> => {
+  const exportCredential = async (hash: string, password: string): Promise<Keystore> => {
     if (!keystore) {
       throw new Error("Keystore not initialized");
     }
@@ -114,19 +115,54 @@ export function KeystoreProvider({ children }: { children: ReactNode }) {
     // Add the credential to the new keystore
     await singleCredentialKeystore.addCredential(credential, password);
     console.log("Single credential keystore:", singleCredentialKeystore.toString());
-    return singleCredentialKeystore.toString();
+    return singleCredentialKeystore;
   };
 
-  const importKeystore = (keystoreJson: string): boolean => {
+  const exportEntireKeystore = async (password: string): Promise<void> => {
+    if (!keystore) {
+      throw new Error("Keystore not initialized");
+    }
+
+    if (storedCredentialsHashes.length === 0) {
+      throw new Error("No credentials to export");
+    }
+
     try {
-      const imported = Keystore.fromString(keystoreJson);
-      if (imported) {
-        setKeystore(imported);
-        setStoredCredentialsHashes(imported.keys());
-        localStorage.setItem(LOCAL_STORAGE_KEYSTORE_KEY, keystoreJson);
-        return true;
+      // Verify the password works for at least one credential
+      const firstHash = storedCredentialsHashes[0];
+      const testCredential = await keystore.readCredential(firstHash, password);
+      
+      if (!testCredential) {
+        throw new Error("Invalid password");
       }
-      return false;
+      
+      // If password is verified, export the entire keystore
+      const filename = 'waku-rln-keystore.json';
+      const blob = new Blob([keystore.toString()], { type: 'application/json' });
+      
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Error exporting keystore:", err);
+      throw err;
+    }
+  };
+
+  const importKeystore = (keystore: Keystore): boolean => {
+    try {
+      setKeystore(keystore);
+      setStoredCredentialsHashes(keystore.keys());
+      localStorage.setItem(LOCAL_STORAGE_KEYSTORE_KEY, keystore.toString());
+      return true;
     } catch (err) {
       console.error("Error importing keystore:", err);
       setError(err instanceof Error ? err.message : "Failed to import keystore");
@@ -152,6 +188,7 @@ export function KeystoreProvider({ children }: { children: ReactNode }) {
     storedCredentialsHashes,
     saveCredentials,
     exportCredential,
+    exportEntireKeystore,
     importKeystore,
     removeCredential,
     getDecryptedCredential

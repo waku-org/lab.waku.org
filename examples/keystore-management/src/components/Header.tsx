@@ -1,16 +1,19 @@
 "use client";
 
-import React from 'react';
-import { WalletInfo } from './WalletInfo';
+import { WalletDropdown } from "./WalletDropdown";
 
 export function Header() {
   return (
-    <header className="bg-gray-900 border-b border-gray-800">
-      <div className="container mx-auto px-6 h-16 flex justify-between items-center">
-        <div className="flex items-center">
-          <h1 className="text-xl font-medium text-white">Waku Keystore Management</h1>
+    <header className="sticky top-0 z-50 w-full border-b border-terminal-border bg-terminal-background/80 backdrop-blur-sm">
+      <div className="container mx-auto flex h-16 items-center justify-between py-4">
+        <div className="font-mono text-lg font-bold">
+          <span className="text-primary glitch">Waku Keystore</span>{" "}
+          <span className="text-foreground opacity-80">Management</span>
         </div>
-        <WalletInfo />
+        
+        <div className="flex items-center space-x-4">
+          <WalletDropdown />
+        </div>
       </div>
     </header>
   );
