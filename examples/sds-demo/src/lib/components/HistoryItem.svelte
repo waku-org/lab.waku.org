@@ -20,7 +20,9 @@
 		[MessageChannelEvent.MessageReceived]: '#8B5CF6', // purple
 		[MessageChannelEvent.MessageAcknowledged]: '#059669', // dark green
 		[MessageChannelEvent.PartialAcknowledgement]: '#6D28D9', // dark purple
-		[MessageChannelEvent.MissedMessages]: '#EF4444' // red
+		[MessageChannelEvent.MissedMessages]: '#EF4444', // red
+		[MessageChannelEvent.SyncSent]: '#F59E0B', // orange
+		[MessageChannelEvent.SyncReceived]: '#F59E0B' // dark orange
 	};
 
 	// Event type to display name using index signature
@@ -30,7 +32,9 @@
 		[MessageChannelEvent.MessageReceived]: 'Received',
 		[MessageChannelEvent.MessageAcknowledged]: 'Acknowledged',
 		[MessageChannelEvent.PartialAcknowledgement]: 'Partially Acknowledged',
-		[MessageChannelEvent.MissedMessages]: 'Missed'
+		[MessageChannelEvent.MissedMessages]: 'Missed',
+		[MessageChannelEvent.SyncSent]: 'Sync Sent',
+		[MessageChannelEvent.SyncReceived]: 'Sync Received'
 	};
 
 	$: id = event ? getMessageId(event) : null;

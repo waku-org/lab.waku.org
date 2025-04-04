@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { subscribeToAllEventsStream } from '$lib/sds/stream.svelte';
+	import { subscribeToAllEventsStream, subscribeToChannelEvents } from '$lib/sds/stream.svelte';
 	import { MessageChannelEvent } from '@waku/sds';
 	import { onMount, onDestroy } from 'svelte';
 	import { getIdenticon } from '$lib/identicon.svelte';
@@ -7,33 +7,15 @@
 	import type { MessageChannelEventObject } from '$lib/sds/stream';
 	import HistoryItem from './HistoryItem.svelte';
 	import LegendModal from './LegendModal.svelte';
-
-	// Map event types to colors using index signature
-	const eventColors: { [key in string]: string } = {
-		[MessageChannelEvent.MessageSent]: '#3B82F6', // blue
-		[MessageChannelEvent.MessageDelivered]: '#10B981', // green
-		[MessageChannelEvent.MessageReceived]: '#8B5CF6', // purple
-		[MessageChannelEvent.MessageAcknowledged]: '#059669', // dark green
-		[MessageChannelEvent.PartialAcknowledgement]: '#6D28D9', // dark purple
-		[MessageChannelEvent.MissedMessages]: '#EF4444' // red
-	};
-
-	// Event type to display name using index signature
-	const eventNames: { [key in string]: string } = {
-		[MessageChannelEvent.MessageSent]: 'Sent',
-		[MessageChannelEvent.MessageDelivered]: 'Delivered',
-		[MessageChannelEvent.MessageReceived]: 'Received',
-		[MessageChannelEvent.MessageAcknowledged]: 'Acknowledged',
-		[MessageChannelEvent.PartialAcknowledgement]: 'Partially Acknowledged',
-		[MessageChannelEvent.MissedMessages]: 'Missed'
-	};
+	import { matchesIdFilter, currentIdFilter } from '$lib/utils/event.svelte';
 
 	// Store for history items
 	let history: Array<MessageChannelEventObject> = $state([]);
 	let identicon: any = $state(null);
 	let currentFilter: string = $state('all');
-	let currentIdFilter: string | null = $state(null);
 	let showLegend: boolean = $state(false);
+
+	let { channelId = null }: { channelId: string | null } = $props();
 
 	// Map of filter values to event types
 	const filterMap: { [key: string]: string | null } = {
@@ -41,7 +23,9 @@
 		sent: MessageChannelEvent.MessageSent,
 		received: MessageChannelEvent.MessageReceived,
 		delivered: MessageChannelEvent.MessageDelivered,
-		acknowledged: MessageChannelEvent.MessageAcknowledged
+		acknowledged: MessageChannelEvent.MessageAcknowledged,
+		syncSent: MessageChannelEvent.SyncSent,
+		syncReceived: MessageChannelEvent.SyncReceived
 	};
 
 	// Calculate counts of each event type
@@ -52,7 +36,9 @@
 		delivered: history.filter((event) => event.type === MessageChannelEvent.MessageDelivered)
 			.length,
 		acknowledged: history.filter((event) => event.type === MessageChannelEvent.MessageAcknowledged)
-			.length
+			.length,
+		syncSent: history.filter((event) => event.type === MessageChannelEvent.SyncSent).length,
+		syncReceived: history.filter((event) => event.type === MessageChannelEvent.SyncReceived).length
 	});
 
 	// Filtered history based on selected filter and ID filter
@@ -65,28 +51,8 @@
 					: history.filter((event) => event.type === filterMap[currentFilter]);
 
 			// Then filter by ID if present
-			if (currentIdFilter) {
-				result = result.filter((event) => {
-					const id = getMessageId(event);
-
-					// Check direct ID match
-					if (id === currentIdFilter) {
-						return true;
-					}
-
-					// Check causal history for ID match
-					if (
-						(event.type === MessageChannelEvent.MessageSent ||
-							event.type === MessageChannelEvent.MessageReceived) &&
-						event.payload.causalHistory
-					) {
-						return event.payload.causalHistory.some(
-							(dependency) => dependency.messageId === currentIdFilter
-						);
-					}
-
-					return false;
-				});
+			if (currentIdFilter.id) {
+				result = result.filter(matchesIdFilter);
 			}
 
 			return result;
@@ -114,7 +80,7 @@
 	// Handle event item click to filter by ID
 	function handleEventClick(id: string | null) {
 		if (id !== null) {
-			currentIdFilter = id;
+			currentIdFilter.id = id;
 		}
 	}
 
@@ -122,12 +88,12 @@
 	function handleDependencyClick(messageId: string, event: Event) {
 		// Stop event propagation so it doesn't trigger parent click handler
 		event.stopPropagation();
-		currentIdFilter = messageId;
+		currentIdFilter.id = messageId;
 	}
 
 	// Clear ID filter
 	function clearIdFilter() {
-		currentIdFilter = null;
+		currentIdFilter.id = null;
 	}
 
 	// Toggle legend display
@@ -135,17 +101,20 @@
 		showLegend = !showLegend;
 	}
 
+	function eventStreamCallback(event: MessageChannelEventObject) {
+		// Add event to history with newest at the top
+		if (event.type === MessageChannelEvent.MissedMessages) {
+			return;
+		}
+		history = [event, ...history];
+	}
+
 	onMount(async () => {
 		identicon = await getIdenticon();
 		// Subscribe to the event stream and collect events
-		unsubscribe = subscribeToAllEventsStream((event) => {
-			// Add event to history with newest at the top
-			if (event.type === MessageChannelEvent.MissedMessages) {
-				return;
-			}
-			history = [event, ...history];
-		});
-		(window as any).saveHistory = saveHistory;
+		unsubscribe = channelId
+			? subscribeToChannelEvents(channelId, eventStreamCallback)
+			: subscribeToAllEventsStream(eventStreamCallback);
 	});
 
 	onDestroy(() => {
@@ -154,19 +123,6 @@
 			unsubscribe();
 		}
 	});
-
-	const saveHistory = () => {
-		const sampleHistory = history.map((event) => {
-			if((event.payload as any).bloomFilter) {
-				(event.payload as any).bloomFilter = new Uint8Array([0, 0, 0, 0]);
-			}
-			return {
-				type: event.type,
-				payload: event.payload
-			};
-		});
-		localStorage.setItem('history', JSON.stringify(sampleHistory));
-	};
 </script>
 
 <div class="history-container">
@@ -181,18 +137,18 @@
 		</select>
 	</div>
 
-	{#if currentIdFilter}
+	{#if currentIdFilter.id	}
 		<div class="id-filter-badge">
-			<span class="id-label">ID: {currentIdFilter}</span>
+			<span class="id-label">ID: {currentIdFilter.id}</span>
 			<button class="clear-filter-btn" onclick={clearIdFilter}>×</button>
 		</div>
 	{/if}
 
 	{#each filteredHistory as event, index}
-		<HistoryItem 
+		<HistoryItem
 			{event}
 			identicon={identicons[index]}
-			currentIdFilter={currentIdFilter}
+			currentIdFilter={currentIdFilter.id}
 			onEventClick={handleEventClick}
 			onDependencyClick={handleDependencyClick}
 		/>

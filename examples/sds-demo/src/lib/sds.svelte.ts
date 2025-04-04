@@ -2,7 +2,7 @@ import { encoder, wakuNode } from '$lib/waku/waku.svelte';
 import { type Message, MessageChannelEvent, encodeMessage, decodeMessage } from '@waku/sds';
 import { getChannel } from '$lib/sds/channel.svelte';
 import { messageHash } from '@waku/message-hash';
-
+import type { MessageChannel } from '@waku/sds';
 const channel = getChannel();
 
 export function subscribe() {
@@ -23,16 +23,17 @@ export function startSending() {
 }
 
 export function sweepOut() {
-	channel.sweepOutgoingBuffer();
+	return channel.sweepOutgoingBuffer();
 }
 
-export async function sweepIn() {
-	const missedMessages = channel.sweepIncomingBuffer();
-	console.log('missedMessages', missedMessages);
+export async function sweepIn(_channel?: MessageChannel) {
+	if (!_channel) {
+		_channel = channel;
+	}
+	const missedMessages = _channel.sweepIncomingBuffer();
 	const messageHashes = missedMessages
 		.filter((message) => message.retrievalHint !== undefined)
 		.map((message) => message.retrievalHint!);
-	console.log('messageHashes', messageHashes);
 	if (messageHashes.length === 0) {
 		return;
 	}
@@ -53,7 +54,7 @@ export async function sweepIn() {
 		for (const msg of messages) {
 			if (msg?.payload) {
 				const sdsMessage = decodeMessage(msg.payload) as unknown as Message;
-				channel.receiveMessage(sdsMessage);
+				_channel.receiveMessage(sdsMessage);
 			}
 		}
 	}

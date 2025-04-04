@@ -15,7 +15,7 @@
   
   <div id="layout-container" class="fixed inset-0 overflow-hidden flex flex-col">
     <Header>
-      <ActionModule />
+      <!-- <ActionModule /> -->
       <ConnectionIndicator />
     </Header>
     <div class="flex-1 overflow-auto my-1">

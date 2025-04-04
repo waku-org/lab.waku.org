@@ -14,6 +14,10 @@ export function getMessageId(event: MessageChannelEventObject) {
         return event.payload.messageId;
     } else if(event.type === MessageChannelEvent.MissedMessages) {
         return event.payload[0].messageId;
+    } else if(event.type === MessageChannelEvent.SyncSent) {
+        return event.payload.messageId;
+    } else if(event.type === MessageChannelEvent.SyncReceived) {
+        return event.payload.messageId;
     }
     return null;
 }

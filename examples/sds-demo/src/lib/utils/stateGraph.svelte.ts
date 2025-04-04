@@ -1,3 +1,4 @@
+import { getMessageId } from '$lib/sds/message';
 import { type MessageChannelEventObject } from '$lib/sds/stream';
 import { MessageChannelEvent } from '@waku/sds';
 
@@ -27,43 +28,23 @@ export const createGrid = (
 		.map(() => Array(columns).fill(null));
 };
 
-type GridItem = {
-	lamportTimestamp: number;
-	events: Array<MessageChannelEventObject>;
-};
-
-const x_start = $state(0);
 const x_window = 100;
-const x_threshold = 0;
-const virtual_grid: Map<number, GridItem> = $state(new Map());
-export const actual_grid = $state(createGrid(x_window, 10).map((row, index) => ({lamportTimestamp: index, columns: row})));
+export const actual_grid = $state(
+	createGrid(x_window, 10).map((row, index) => ({ lamportTimestamp: index + 1, columns: row }))
+);
 export const update_virtual_grid = (event: MessageChannelEventObject) => {
 	const lamportTimestamp = getLamportTimestamp(event);
 	if (!lamportTimestamp) {
 		return;
 	}
-	const events = virtual_grid.get(lamportTimestamp)?.events || [];
-	events.push(event);
-	virtual_grid.set(lamportTimestamp, { lamportTimestamp, events });
-	if(lamportTimestamp > x_start + x_window - x_threshold) {
-		shift_actual_grid(0 ,lamportTimestamp - x_window - x_threshold);
-	} else if (x_start <= lamportTimestamp && lamportTimestamp <= x_start + x_window) {
-		actual_grid[lamportTimestamp % x_window].columns.push(event);
-	}
-}
-export const shift_actual_grid = (amount: number = 1, _x_start?: number) => {
-	if (!_x_start) {
-		_x_start = x_start;
-	}
-	for(let i = _x_start + amount; i < _x_start + x_window + amount; i++) {
-		const events = virtual_grid.get(i)?.events || [];
-		actual_grid[i % x_window] = {lamportTimestamp: i, columns: events};
-	}
-}
+	actual_grid[lamportTimestamp - (1 % x_window)].columns.push(event);
+};
 
 export const grid = $state(createGrid(50, 10));
 
+const messageIdToLamportTimestamp = $state(new Map<string, number>());
 const getLamportTimestamp = (event: MessageChannelEventObject) => {
+	const messageId = getMessageId(event);
 	let lamportTimestamp = null;
 	if (
 		event.type === MessageChannelEvent.MessageSent ||
@@ -75,11 +56,22 @@ const getLamportTimestamp = (event: MessageChannelEventObject) => {
 		if (!lamportTimestamp) {
 			return;
 		}
-	} else {
-		lamportTimestamp = longestTimestamp;
+		if (messageId) {
+			messageIdToLamportTimestamp.set(messageId, lamportTimestamp);
+		}
+	} else if (
+		event.type === MessageChannelEvent.MessageDelivered ||
+		event.type === MessageChannelEvent.MessageAcknowledged
+	) {
+		if (messageId) {
+			lamportTimestamp = messageIdToLamportTimestamp.get(messageId) || null;
+		}
+		if (!lamportTimestamp) {
+			lamportTimestamp = longestTimestamp;
+		}
 	}
 	return lamportTimestamp;
-}
+};
 const messagesPerLamportTimestamp = $state(new Map<number, Array<MessageChannelEventObject>>());
 let longestTimestamp = $state(0);
 export const recordMessage = (
