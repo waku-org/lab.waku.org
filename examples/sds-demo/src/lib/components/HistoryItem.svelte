@@ -92,9 +92,9 @@
 	}
 
 	.empty {
-		border: 1px dashed rgba(107, 79, 138, 0.2);
-		border-radius: 12px;
-		background-color: #f8f3ff;
+		border: 1px dashed rgba(0, 0, 0, 0.1);
+		border-radius: 4px;
+		background-color: #ffffff;
 	}
 
 	.item-container {
@@ -111,27 +111,15 @@
 		flex-direction: row;
 		align-items: center;
 		justify-content: flex-start;
-		border-radius: 12px;
+		border-radius: 4px;
 		width: 100%;
-		min-height: 70px;
+		min-height: 60px;
 		color: white;
 		padding: 12px;
-		box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 		position: relative;
-		transition: all 0.3s ease;
+		transition: all 0.2s ease;
 		border: none;
-		overflow: hidden;
-	}
-	
-	.event-box::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
-		z-index: 1;
 	}
 
 	.dependency-box {
@@ -141,79 +129,46 @@
 		margin-left: auto;
 		width: auto;
 		max-width: 80%;
-		min-height: 40px;
+		min-height: 30px;
 		font-size: 11px;
 		font-family: monospace;
 		opacity: 0.9;
-		padding: 8px 14px;
-		border-radius: 10px;
+		padding: 6px 10px;
+		border-radius: 4px;
 		color: white;
-		box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
-		transition: all 0.3s ease;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+		transition: all 0.2s ease;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		position: relative;
-	}
-	
-	.dependency-box::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
-		z-index: 1;
 	}
 
 	.highlight {
-		border-left: 4px solid #FFC107;
-		border-right: 4px solid #FFC107;
-		position: relative;
-		background-image: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1));
-		animation: pulse 1.5s infinite;
+		border-left: 2px solid #DB8D43;
+		border-right: 2px solid #DB8D43;
 	}
 
 	.highlight .event-type {
-		font-size: 16px;
+		font-size: 15px;
 		color: white;
 		font-weight: bold;
-		letter-spacing: 0.5px;
-		text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 	}
 
 	.highlight .event-id,
 	.dependency-box.highlight {
 		font-weight: bold;
-		letter-spacing: 0.5px;
-		text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 	}
 
 	.dependency-box.highlight {
 		font-size: 12px;
 	}
-	
-	@keyframes pulse {
-		0% {
-			box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
-		}
-		70% {
-			box-shadow: 0 0 0 6px rgba(255, 193, 7, 0);
-		}
-		100% {
-			box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
-		}
-	}
 
 	.identicon {
-		width: 40px;
-		height: 40px;
-		border-radius: 8px;
+		width: 36px;
+		height: 36px;
+		border-radius: 4px;
 		overflow: hidden;
-		margin-right: 14px;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		margin-right: 12px;
 		position: relative;
-		z-index: 2;
 	}
 
 	.identicon img {
@@ -226,8 +181,6 @@
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
-		position: relative;
-		z-index: 2;
 	}
 
 	.event-type {
@@ -237,8 +190,6 @@
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-		letter-spacing: 0.05em;
 	}
 
 	.event-id {
@@ -257,10 +208,9 @@
 		font-size: 12px;
 		color: rgba(255, 255, 255, 0.9);
 		font-weight: 500;
-		background-color: rgba(0, 0, 0, 0.15);
-		padding: 3px 8px;
-		border-radius: 10px;
-		z-index: 2;
+		background-color: rgba(0, 0, 0, 0.1);
+		padding: 2px 6px;
+		border-radius: 4px;
 	}
 
 	.sent-or-received {
@@ -270,9 +220,8 @@
 		font-size: 12px;
 		color: rgba(255, 255, 255, 0.9);
 		font-weight: 500;
-		background-color: rgba(0, 0, 0, 0.15);
-		padding: 3px 8px;
-		border-radius: 10px;
-		z-index: 2;
+		background-color: rgba(0, 0, 0, 0.1);
+		padding: 2px 6px;
+		border-radius: 4px;
 	}
 </style> 

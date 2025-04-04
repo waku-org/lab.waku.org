@@ -39,26 +39,28 @@
 		{@const length = row.columns.filter((c) => c !== null).length}
 		{@const empty = 4 - length}
 		{@const isEmptyColumn = length === 0}
-		<div class="column mr-2 mb-4 rounded-lg p-4 pt-2 state-column {isEmptyColumn ? 'empty-column' : ''}">
+		<div class="column mr-2 mb-4 p-4 state-column {isEmptyColumn ? 'empty-column' : ''}">
 			<div class="lamport-timestamp">
 				<span>{row.lamportTimestamp}</span>
 			</div>
-			{#each row.columns as cell}
-				{@const filtered = currentIdFilter.id && cell && matchesIdFilter(cell)}
-				{#if cell?.type}
-					<div
-						class={`cell ${currentIdFilter.id ? (filtered ? 'filtered' : 'filtered-out') : ''}`}
-						style="background-color: {eventColors[cell.type]};"
-					>
-						<p class="cell-text">{eventNames[cell.type]}</p>
-					</div>
-				{/if}
-			{/each}
-			{#if empty > 0}
-				{#each Array(empty) as _}
-					<div class="cell empty-cell"></div>
+			<div class="queue-container">
+				{#each row.columns as cell}
+					{@const filtered = currentIdFilter.id && cell && matchesIdFilter(cell)}
+					{#if cell?.type}
+						<div
+							class={`cell ${currentIdFilter.id ? (filtered ? 'filtered' : 'filtered-out') : ''}`}
+							style="background-color: {eventColors[cell.type]};"
+						>
+							<p class="cell-text">{eventNames[cell.type]}</p>
+						</div>
+					{/if}
 				{/each}
-			{/if}
+				{#if empty > 0}
+					{#each Array(empty) as _}
+						<div class="cell empty-cell"></div>
+					{/each}
+				{/if}
+			</div>
 		</div>
 	{/each}
 </div>
@@ -68,109 +70,73 @@
 		display: inline-flex;
 		flex-direction: row;
 		flex-wrap: wrap;
-		justify-content: space-evenly;
+		justify-content: flex-start;
 		gap: 16px;
 	}
 	
 	.lamport-timestamp {
 		text-align: center;
-		margin-bottom: 8px;
+		margin-bottom: 12px;
 		font-weight: bold;
 		font-size: 14px;
-		color: #6B4F8A;
-		position: relative;
+		color: #333333;
 	}
 	
-	.lamport-timestamp::before,
-	.lamport-timestamp::after {
-		content: '';
-		position: absolute;
-		height: 2px;
-		width: 30%;
-		background: linear-gradient(90deg, transparent, #F59E0B, transparent);
-		top: 50%;
-	}
-	
-	.lamport-timestamp::before {
-		left: 5%;
-	}
-	
-	.lamport-timestamp::after {
-		right: 5%;
-	}
-	
-	.lamport-timestamp span {
-		background-color: #f8f3ff;
-		padding: 0 8px;
-		border-radius: 10px;
-		position: relative;
-		z-index: 1;
+	.queue-container {
+		background-color: #f5f5f5;
+		border-radius: 4px;
+		padding: 8px;
+		min-height: 200px;
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 6px;
 	}
 	
 	.cell {
 		min-width: 100px;
-		min-height: 50px;
+		min-height: 40px;
 		border: none;
-		margin: 4px;
-		border-radius: 6px;
+		margin: 2px 0;
+		border-radius: 4px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 		position: relative;
-		overflow: hidden;
-	}
-	
-	.cell::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
-		z-index: 1;
 	}
 
 	.filtered {
-		box-shadow: 0 0 0 3px #FFC107;
-		animation: pulse 1.5s infinite;
+		box-shadow: 0 0 0 2px #DB8D43;
 	}
 
 	.filtered-out {
-		opacity: 0.4;
+		opacity: 0.35;
 	}
 
 	.empty-cell {
-		border: 1px dashed rgba(107, 79, 138, 0.2);
-		background-color: rgba(248, 243, 255, 0.5);
+		border: 1px dashed rgba(0, 0, 0, 0.1);
+		background-color: rgba(240, 240, 240, 0.5);
 		box-shadow: none;
 	}
 
 	.column {
-		border: none;
-		max-height: 400px;
-		min-height: 200px;
-		min-width: 200px;
 		max-width: 280px;
-		background-color: #f8f3ff;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-		border-radius: 12px;
+		min-width: 200px;
+		background-color: #ffffff;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		border-radius: 4px;
 		position: relative;
-		overflow: hidden;
+		border: 1px solid #e0ddd4;
 	}
 	
 	.state-column {
-		border-left: 4px solid #F59E0B;
-		border-right: 4px solid #F59E0B;
-		border-radius: 12px;
 		transition: transform 0.2s;
-		background-color: #f8f3ff;
 	}
 	
 	.state-column:hover {
-		transform: translateY(-4px);
-		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+		transform: translateY(-2px);
+		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 	}
 	
 	.cell-text {
@@ -178,38 +144,22 @@
 		text-align: center;
 		vertical-align: middle;
 		text-transform: uppercase;
-		letter-spacing: 0.1em;
+		letter-spacing: 0.05em;
 		color: white;
 		font-weight: bold;
-		text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-		position: relative;
-		z-index: 2;
-	}
-
-	@keyframes pulse {
-		0% {
-			box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
-		}
-		70% {
-			box-shadow: 0 0 0 6px rgba(255, 193, 7, 0);
-		}
-		100% {
-			box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
-		}
 	}
 
 	.empty-column {
-		background-color: rgba(107, 79, 138, 0.1);
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-		opacity: 0.8;
+		background-color: rgba(0, 0, 0, 0.02);
+		opacity: 0.7;
 	}
 	
 	.empty-column .lamport-timestamp {
-		color: rgba(107, 79, 138, 0.6);
+		color: rgba(0, 0, 0, 0.4);
 	}
 	
 	.empty-column .empty-cell {
-		border: 1px dashed rgba(107, 79, 138, 0.15);
-		background-color: rgba(248, 243, 255, 0.3);
+		border: 1px dashed rgba(0, 0, 0, 0.05);
+		background-color: rgba(240, 240, 240, 0.3);
 	}
 </style>

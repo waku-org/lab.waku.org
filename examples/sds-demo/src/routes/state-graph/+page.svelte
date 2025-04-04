@@ -43,9 +43,9 @@
 		flex-direction: row;
 		height: 100%;
 		padding: 16px;
-		gap: 16px;
+		gap: 20px;
 		overflow: hidden;
-		background: linear-gradient(135deg, #f0e6ff 0%, #f8f3ff 100%);
+		background-color: #f5f2e8; /* Light beige background similar to example */
 	}
 
 	.history-panel {
@@ -63,49 +63,24 @@
 
 	.state-graph-panel {
 		height: 100%;
-		background-color: #f8f3ff;
-		border-radius: 12px;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-		padding: 20px;
+		background-color: #ffffff;
+		border-radius: 4px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		padding: 24px;
 		overflow: auto;
 		position: relative;
-		border-left: 4px solid #F59E0B;
-		border-right: 4px solid #F59E0B;
+		border: 1px solid #e0ddd4;
 	}
 
-	.state-graph-panel::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 6px;
-		background: linear-gradient(to right, #F59E0B, #9966CC, #F59E0B);
-		border-top-left-radius: 12px;
-		border-top-right-radius: 12px;
-	}
-
-	.state-graph-panel::after {
-		content: '';
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		height: 6px;
-		background: linear-gradient(to right, #F59E0B, #9966CC, #F59E0B);
-		border-bottom-left-radius: 12px;
-		border-bottom-right-radius: 12px;
-	}
-	
 	.panel-header {
-		margin-bottom: 20px;
+		margin-bottom: 24px;
 		text-align: center;
 		position: relative;
 	}
 	
 	.panel-header h2 {
 		font-size: 20px;
-		color: #6B4F8A;
+		color: #333333;
 		font-weight: 600;
 		margin: 0;
 		padding: 0 0 10px 0;
@@ -117,10 +92,10 @@
 		content: '';
 		position: absolute;
 		bottom: 0;
-		left: 10%;
-		right: 10%;
-		height: 2px;
-		background: linear-gradient(90deg, transparent, #F59E0B, transparent);
+		left: 0;
+		right: 0;
+		height: 1px;
+		background-color: #e0ddd4;
 	}
 
 	@media (max-width: 1200px) {
