@@ -3,14 +3,14 @@ import { MessageChannelEvent } from '@waku/sds';
 import type { MessageChannelEventObject } from '$lib/sds/stream';
 
 export const eventColors: { [key in string]: string } = {
-	[MessageChannelEvent.MessageSent]: '#3B82F6', // blue
-	[MessageChannelEvent.MessageDelivered]: '#10B981', // green
-	[MessageChannelEvent.MessageReceived]: '#8B5CF6', // purple
-	[MessageChannelEvent.MessageAcknowledged]: '#059669', // dark green
-	[MessageChannelEvent.PartialAcknowledgement]: '#6D28D9', // dark purple
-	[MessageChannelEvent.MissedMessages]: '#EF4444', // red
-	[MessageChannelEvent.SyncSent]: '#F59E0B', // orange
-	[MessageChannelEvent.SyncReceived]: '#F59E0B' // dark orange
+	[MessageChannelEvent.MessageSent]: '#427BF5', // bright blue
+	[MessageChannelEvent.MessageDelivered]: '#10B981', // vibrant green
+	[MessageChannelEvent.MessageReceived]: '#9966CC', // purple (inspired by image)
+	[MessageChannelEvent.MessageAcknowledged]: '#3F8C6F', // deeper green
+	[MessageChannelEvent.PartialAcknowledgement]: '#754FB0', // deep purple
+	[MessageChannelEvent.MissedMessages]: '#F06060', // coral red (from image)
+	[MessageChannelEvent.SyncSent]: '#F59E0B', // warm orange (from image)
+	[MessageChannelEvent.SyncReceived]: '#DB8500' // deeper orange
 };
 
 // Event type to display name using index signature

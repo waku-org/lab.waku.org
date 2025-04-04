@@ -2,6 +2,7 @@
 	import { MessageChannelEvent } from '@waku/sds';
 	import type { MessageChannelEventObject } from '$lib/sds/stream';
 	import { getMessageId } from '$lib/sds/message';
+	import { eventColors, eventNames } from '$lib/utils/event.svelte';
 
 	export let event: MessageChannelEventObject | undefined = undefined;
 	export let identicon: string = '';
@@ -12,30 +13,6 @@
 	export let height: number = 178;
 
 	export let overflow: boolean = true;
-
-	// Map event types to colors using index signature
-	const eventColors: { [key in string]: string } = {
-		[MessageChannelEvent.MessageSent]: '#3B82F6', // blue
-		[MessageChannelEvent.MessageDelivered]: '#10B981', // green
-		[MessageChannelEvent.MessageReceived]: '#8B5CF6', // purple
-		[MessageChannelEvent.MessageAcknowledged]: '#059669', // dark green
-		[MessageChannelEvent.PartialAcknowledgement]: '#6D28D9', // dark purple
-		[MessageChannelEvent.MissedMessages]: '#EF4444', // red
-		[MessageChannelEvent.SyncSent]: '#F59E0B', // orange
-		[MessageChannelEvent.SyncReceived]: '#F59E0B' // dark orange
-	};
-
-	// Event type to display name using index signature
-	const eventNames: { [key in string]: string } = {
-		[MessageChannelEvent.MessageSent]: 'Sent',
-		[MessageChannelEvent.MessageDelivered]: 'Delivered',
-		[MessageChannelEvent.MessageReceived]: 'Received',
-		[MessageChannelEvent.MessageAcknowledged]: 'Acknowledged',
-		[MessageChannelEvent.PartialAcknowledgement]: 'Partially Acknowledged',
-		[MessageChannelEvent.MissedMessages]: 'Missed',
-		[MessageChannelEvent.SyncSent]: 'Sync Sent',
-		[MessageChannelEvent.SyncReceived]: 'Sync Received'
-	};
 
 	$: id = event ? getMessageId(event) : null;
 	$: color = event ? (eventColors[event.type] || '#888') : '#f0f0f0';
@@ -103,6 +80,11 @@
 	.history-item {
 		padding: 8px;
 		box-sizing: border-box;
+		transition: transform 0.2s ease;
+	}
+
+	.history-item:not(.empty):hover {
+		transform: translateX(2px);
 	}
 
 	.history-item:not(.empty) {
@@ -110,9 +92,9 @@
 	}
 
 	.empty {
-		border: 1px dashed #ccc;
-		border-radius: 8px;
-		background-color: #f9f9f9;
+		border: 1px dashed rgba(107, 79, 138, 0.2);
+		border-radius: 12px;
+		background-color: #f8f3ff;
 	}
 
 	.item-container {
@@ -129,14 +111,27 @@
 		flex-direction: row;
 		align-items: center;
 		justify-content: flex-start;
-		border-radius: 8px;
+		border-radius: 12px;
 		width: 100%;
 		min-height: 70px;
 		color: white;
-		padding: 8px;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		padding: 12px;
+		box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 		position: relative;
-		transition: box-shadow 0.3s ease;
+		transition: all 0.3s ease;
+		border: none;
+		overflow: hidden;
+	}
+	
+	.event-box::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
+		z-index: 1;
 	}
 
 	.dependency-box {
@@ -149,48 +144,76 @@
 		min-height: 40px;
 		font-size: 11px;
 		font-family: monospace;
-		opacity: 0.85;
-		padding: 6px 12px;
-		border-radius: 8px;
+		opacity: 0.9;
+		padding: 8px 14px;
+		border-radius: 10px;
 		color: white;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-		transition: box-shadow 0.3s ease;
+		box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+		transition: all 0.3s ease;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		position: relative;
+	}
+	
+	.dependency-box::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
+		z-index: 1;
 	}
 
 	.highlight {
-		border-left: 4px solid white;
-		border-right: 4px solid white;
+		border-left: 4px solid #FFC107;
+		border-right: 4px solid #FFC107;
 		position: relative;
 		background-image: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1));
+		animation: pulse 1.5s infinite;
 	}
 
 	.highlight .event-type {
 		font-size: 16px;
 		color: white;
 		font-weight: bold;
-		font-style: italic;
 		letter-spacing: 0.5px;
+		text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 	}
 
 	.highlight .event-id,
 	.dependency-box.highlight {
 		font-weight: bold;
-		font-style: italic;
 		letter-spacing: 0.5px;
+		text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 	}
 
 	.dependency-box.highlight {
 		font-size: 12px;
 	}
+	
+	@keyframes pulse {
+		0% {
+			box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+		}
+		70% {
+			box-shadow: 0 0 0 6px rgba(255, 193, 7, 0);
+		}
+		100% {
+			box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+		}
+	}
 
 	.identicon {
 		width: 40px;
 		height: 40px;
-		border-radius: 4px;
+		border-radius: 8px;
 		overflow: hidden;
-		margin-right: 12px;
+		margin-right: 14px;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		position: relative;
+		z-index: 2;
 	}
 
 	.identicon img {
@@ -203,6 +226,8 @@
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
+		position: relative;
+		z-index: 2;
 	}
 
 	.event-type {
@@ -212,33 +237,42 @@
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+		letter-spacing: 0.05em;
 	}
 
 	.event-id {
 		font-family: monospace;
-		font-size: 10px;
-		color: rgba(255, 255, 255, 0.7);
+		font-size: 11px;
+		color: rgba(255, 255, 255, 0.8);
 		max-width: 220px;
-		/* overflow: hidden; */
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
 	.lamport-timestamp {
 		position: absolute;
-		top: 8px;
-		right: 12px;
+		top: 12px;
+		right: 14px;
 		font-size: 12px;
 		color: rgba(255, 255, 255, 0.9);
 		font-weight: 500;
+		background-color: rgba(0, 0, 0, 0.15);
+		padding: 3px 8px;
+		border-radius: 10px;
+		z-index: 2;
 	}
 
 	.sent-or-received {
 		position: absolute;
-		top: 8px;
-		right: 12px;
+		top: 12px;
+		right: 14px;
 		font-size: 12px;
 		color: rgba(255, 255, 255, 0.9);
 		font-weight: 500;
+		background-color: rgba(0, 0, 0, 0.15);
+		padding: 3px 8px;
+		border-radius: 10px;
+		z-index: 2;
 	}
 </style> 
