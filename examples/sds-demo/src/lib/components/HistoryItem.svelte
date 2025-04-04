@@ -15,8 +15,8 @@
 	export let overflow: boolean = true;
 
 	$: id = event ? getMessageId(event) : null;
-	$: color = event ? (eventColors[event.type] || '#888') : '#f0f0f0';
-	$: name = event ? (eventNames[event.type] || event.type) : '';
+	$: color = event ? eventColors[event.type] || '#888' : '#f0f0f0';
+	$: name = event ? eventNames[event.type] || event.type : '';
 	$: matchesFilter = currentIdFilter && id === currentIdFilter;
 
 	function handleEventClick() {
@@ -30,13 +30,14 @@
 	}
 </script>
 
-<div class="history-item {!event ? 'empty' : ''}" style="width: 100%; height: {height}px;" on:click={event ? handleEventClick : undefined}>
+<div
+	class="history-item {!event ? 'empty' : ''}"
+	style="width: 100%;"
+	on:click={event ? handleEventClick : undefined}
+>
 	{#if event}
 		<div class="item-container">
-			<div
-				class="event-box {matchesFilter ? 'highlight' : ''}"
-				style="background-color: {color};"
-			>
+			<div class="event-box {matchesFilter ? 'highlight' : ''}" style="background-color: {color};">
 				<div class="identicon">
 					<img src="data:image/svg+xml;base64,{identicon}" alt="Identicon" />
 				</div>
@@ -48,18 +49,13 @@
 						{id}
 					</div>
 				</div>
-				{#if event.type === MessageChannelEvent.MessageDelivered}
-					<div class="sent-or-received">
-						{event.payload.sentOrReceived}
-					</div>
-				{/if}
-				{#if event.type === MessageChannelEvent.MessageSent || event.type === MessageChannelEvent.MessageReceived}
+				{#if event.type === MessageChannelEvent.MessageSent || event.type === MessageChannelEvent.MessageReceived || event.type === MessageChannelEvent.SyncSent || event.type === MessageChannelEvent.SyncReceived}
 					<div class="lamport-timestamp">
 						{event.payload.lamportTimestamp}
 					</div>
 				{/if}
 			</div>
-			{#if event.type === MessageChannelEvent.MessageSent || event.type === MessageChannelEvent.MessageReceived}
+			{#if event.type === MessageChannelEvent.MessageSent || event.type === MessageChannelEvent.MessageReceived || event.type === MessageChannelEvent.SyncSent || event.type === MessageChannelEvent.SyncReceived}
 				{#each event.payload.causalHistory as dependency}
 					{@const dependencyMatchesFilter =
 						currentIdFilter && dependency.messageId === currentIdFilter}
@@ -81,6 +77,8 @@
 		padding: 8px;
 		box-sizing: border-box;
 		transition: transform 0.2s ease;
+		width: 100%;
+		max-width: 100%;
 	}
 
 	.history-item:not(.empty):hover {
@@ -104,6 +102,7 @@
 		gap: 6px;
 		width: 100%;
 		height: 100%;
+		overflow: hidden;
 	}
 
 	.event-box {
@@ -120,6 +119,8 @@
 		position: relative;
 		transition: all 0.2s ease;
 		border: none;
+		box-sizing: border-box;
+		overflow: hidden;
 	}
 
 	.dependency-box {
@@ -140,11 +141,12 @@
 		transition: all 0.2s ease;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		box-sizing: border-box;
 	}
 
 	.highlight {
-		border-left: 2px solid #DB8D43;
-		border-right: 2px solid #DB8D43;
+		border-left: 2px solid #db8d43;
+		border-right: 2px solid #db8d43;
 	}
 
 	.highlight .event-type {
@@ -199,6 +201,7 @@
 		max-width: 220px;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		overflow: hidden;
 	}
 
 	.lamport-timestamp {
@@ -224,4 +227,4 @@
 		padding: 2px 6px;
 		border-radius: 4px;
 	}
-</style> 
+</style>

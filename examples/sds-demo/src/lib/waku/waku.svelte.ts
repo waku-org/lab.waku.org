@@ -78,7 +78,7 @@ export class WakuNode {
 		}
 		return await node.lightPush.send(encoder, {
 			payload: payload,
-			timestamp: timestamp,
+			timestamp: timestamp
 		});
 	}
 
@@ -133,10 +133,19 @@ export async function startWaku(): Promise<void> {
 		await wakuNode.setNode(node);
 
 		// Connect to peers
-		await node.dial(
-			// '/dns4/waku-test.bloxy.one/tcp/8095/wss/p2p/16Uiu2HAmSZbDB7CusdRhgkD81VssRjQV5ZH13FbzCGcdnbbh6VwZ'
-			'/ip4/127.0.0.1/tcp/8000/ws/p2p/16Uiu2HAm3TLea2NVs4dAqYM2gAgoV9CMKGeD1BkP3RAvmk7HBAbU'
-		);
+		const peers = [
+			// '/ip4/127.0.0.1/tcp/8000/ws/p2p/16Uiu2HAm3TLea2NVs4dAqYM2gAgoV9CMKGeD1BkP3RAvmk7HBAbU',
+			'/dns4/waku-test.bloxy.one/tcp/8095/wss/p2p/16Uiu2HAmSZbDB7CusdRhgkD81VssRjQV5ZH13FbzCGcdnbbh6VwZ',
+			'/dns4/waku.fryorcraken.xyz/tcp/8000/wss/p2p/16Uiu2HAmMRvhDHrtiHft1FTUYnn6cVA8AWVrTyLUayJJ3MWpUZDB',
+			'/dns4/ivansete.xyz/tcp/8000/wss/p2p/16Uiu2HAmDAHuJ8w9zgxVnhtFe8otWNJdCewPAerJJPbXJcn8tu4r'
+		];
+		for (const peer of peers) {
+			try {
+				await node.dial(peer);
+			} catch (error) {
+				console.error(`Error dialing peer ${peer}:`, error);
+			}
+		}
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(window as any).waku = node;
 		connectionState.update((state) => ({
@@ -227,7 +236,11 @@ export async function joinLobby(): Promise<MatchParams> {
 					if (messageData.from === id) {
 						return;
 					}
-					if (messageData.messageType === LobbyMessageType.Ping || messageData.to === id) {
+					if (
+						messageData.messageType === LobbyMessageType.Ongoing ||
+						messageData.messageType === LobbyMessageType.Ping ||
+						messageData.to === id
+					) {
 						processUpdates([{ peerId: messageData.from, message: messageData, sent: false }]);
 					}
 					console.log('Received lobby message:', messageData);
@@ -344,6 +357,26 @@ export async function joinLobby(): Promise<MatchParams> {
 					subscription.unsubscribe([lobbyDecoder.contentTopic]);
 				}
 				resume(Effect.succeed(params));
+			} else if (event.newState === PeerState.Ongoing) {
+				console.log(`Match ongoing with ${event.peerId}`);
+
+				// if we sent a match, then start the simulation
+				// stop responding to lobby messages, as we should now be in a match
+				if (fiber) {
+					fiber();
+				}
+				if (pingFiber) {
+					Effect.runFork(Fiber.interrupt(pingFiber));
+				}
+				if (subscription) {
+					subscription.unsubscribe([lobbyDecoder.contentTopic]);
+				}
+				if (event.message.match) {
+					const params: MatchParams = event.message.match;
+					resume(Effect.succeed(params));
+				} else {
+					resume(Effect.fail(new Error('No match found')));
+				}
 			}
 		};
 

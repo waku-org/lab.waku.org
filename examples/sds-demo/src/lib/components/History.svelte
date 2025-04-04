@@ -8,6 +8,7 @@
 	import HistoryItem from './HistoryItem.svelte';
 	import LegendModal from './LegendModal.svelte';
 	import { matchesIdFilter, currentIdFilter } from '$lib/utils/event.svelte';
+	import { hash } from '$lib/utils/hash';
 
 	// Store for history items
 	let history: Array<MessageChannelEventObject> = $state([]);
@@ -106,6 +107,9 @@
 		if (event.type === MessageChannelEvent.MissedMessages) {
 			return;
 		}
+		if (event.type === MessageChannelEvent.SyncSent || event.type === MessageChannelEvent.SyncReceived) {
+			event.payload.messageId = hash(event.payload.messageId + event.payload.causalHistory[0].messageId)
+		}
 		history = [event, ...history];
 	}
 
@@ -134,6 +138,8 @@
 			<option value="received">Received ({eventCounts.received})</option>
 			<option value="delivered">Delivered ({eventCounts.delivered})</option>
 			<option value="acknowledged">Acknowledged ({eventCounts.acknowledged})</option>
+			<option value="syncSent">Sync Sent ({eventCounts.syncSent})</option>
+			<option value="syncReceived">Sync Received ({eventCounts.syncReceived})</option>
 		</select>
 	</div>
 
@@ -144,15 +150,18 @@
 		</div>
 	{/if}
 
-	{#each filteredHistory as event, index}
-		<HistoryItem
-			{event}
-			identicon={identicons[index]}
-			currentIdFilter={currentIdFilter.id}
-			onEventClick={handleEventClick}
-			onDependencyClick={handleDependencyClick}
-		/>
-	{/each}
+	<div class="history-items-container">
+		{#each filteredHistory as event, index}
+			<HistoryItem
+				{event}
+				identicon={identicons[index]}
+				currentIdFilter={currentIdFilter.id}
+				onEventClick={handleEventClick}
+				onDependencyClick={handleDependencyClick}
+			/>
+		{/each}
+	</div>
+	<div class="bottom-fade"></div>
 
 	<LegendModal bind:isOpen={showLegend} />
 </div>
@@ -162,16 +171,41 @@
 		display: flex;
 		flex-direction: column;
 		height: 100%;
-		overflow-y: scroll;
+		overflow-y: auto;
 		overflow-x: hidden;
 		min-width: 400px;
-		scrollbar-width: none;
+		scrollbar-width: none; /* Firefox */
+		-ms-overflow-style: none; /* IE and Edge */
 		background-color: #ffffff;
 		border-radius: 4px;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 		position: relative;
 		border: 1px solid #e0ddd4;
 		padding: 12px;
+	}
+	
+	/* Hide scrollbar for Chrome, Safari and Opera */
+	.history-container::-webkit-scrollbar {
+		display: none;
+	}
+	
+	.history-items-container {
+		flex: 1;
+		position: relative;
+		padding-bottom: 30px; /* Add space for the fade effect */
+		width: 100%;
+		overflow-x: hidden;
+	}
+	
+	.bottom-fade {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		height: 40px;
+		background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
+		pointer-events: none; /* Allows interaction with elements underneath */
+		z-index: 1;
 	}
 
 	.virtualizer-container {
@@ -273,5 +307,11 @@
 
 	.clear-filter-btn:hover {
 		background: rgba(0, 0, 0, 0.2);
+	}
+
+	/* Ensure all child elements don't cause horizontal overflow */
+	.id-filter-badge, .header, .item-filter {
+		max-width: 100%;
+		box-sizing: border-box;
 	}
 </style>

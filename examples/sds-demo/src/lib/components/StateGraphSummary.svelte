@@ -5,6 +5,7 @@
 	import { MessageChannelEvent } from '@waku/sds';
 	import { eventColors, eventNames, currentIdFilter, matchesIdFilter } from '$lib/utils/event.svelte';
 	import type { MessageChannelEventObject } from '$lib/sds/stream';
+	import { hash } from '$lib/utils/hash';
 
 	let { channelId = null }: { channelId: string | null } = $props();
 	let unsubscribe: (() => void) | null = $state(null);
@@ -14,8 +15,7 @@
 			return;
 		}
 		if (event.type === MessageChannelEvent.SyncSent || event.type === MessageChannelEvent.SyncReceived) {
-			event
-			return;
+			event.payload.messageId = hash(event.payload.messageId + event.payload.causalHistory[0].messageId)
 		}
 		console.log('updating virtual grid', event);
 		update_virtual_grid(event);

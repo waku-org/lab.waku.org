@@ -1,7 +1,7 @@
 <script lang="ts">
 	import History from '$lib/components/History.svelte';
 	import StateGraphSummary from '$lib/components/StateGraphSummary.svelte';
-
+	import Missing from '$lib/components/Missing.svelte';
 	import { getMatch } from '$lib/utils/match.svelte';
 	import { goto } from '$app/navigation';
 	import type { MatchParams } from '$lib/waku/waku.svelte';
@@ -21,7 +21,10 @@
 {#if match}
 	<div class="main-container">
 		<!-- History Sidebar -->
-		<div class="history-panel">
+		<div class="state-graph-panel">
+			<div class="panel-header">
+				<h2>Event History</h2>
+			</div>
 			<History channelId={match?.matchId ?? null} />
 		</div>
 
@@ -29,10 +32,17 @@
 			<!-- Summary State Graph -->
 			<div class="state-graph-panel">
 				<div class="panel-header">
-					<h2>State Synchronization Visualization</h2>
+					<h2>Events by Lamport Timestamp</h2>
 				</div>
 				<StateGraphSummary channelId={match?.matchId ?? null} />
 			</div>
+		</div>
+
+		<div class="state-graph-panel">
+			<div class="panel-header">
+				<h2>Missed Messages</h2>
+			</div>
+			<Missing channelId={match?.matchId ?? null} />
 		</div>
 	</div>
 {/if}
@@ -70,6 +80,7 @@
 		overflow: auto;
 		position: relative;
 		border: 1px solid #e0ddd4;
+		scrollbar-width: none;
 	}
 
 	.panel-header {

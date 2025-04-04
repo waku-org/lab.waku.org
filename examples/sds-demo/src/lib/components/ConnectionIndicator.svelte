@@ -5,6 +5,8 @@
   import { health, unregisterHealthListener } from "../waku/waku.svelte";
   import { page } from '$app/state';
 
+  import { listening } from "../waku/pingpong.svelte";
+
   let healthStatus = $state(HealthStatus.Unhealthy);
   let isHomePage = $state(false);
   let shouldShowConnectButton = $state(false);
@@ -39,15 +41,16 @@
     stopHealthCheck();
   });
 
-  function getHealthColor(status: HealthStatus) {
+  function getHealthColor() {
+    const status = listening.listening ? HealthStatus.SufficientlyHealthy : HealthStatus.Unhealthy;
     if ($connectionState.status !== "connected") {
       return "gray";
     }
     switch (status) {
       case HealthStatus.SufficientlyHealthy:
         return "green";
-      case HealthStatus.MinimallyHealthy:
-        return "goldenrod";
+      // case HealthStatus.MinimallyHealthy:
+      //   return "goldenrod";
       case HealthStatus.Unhealthy:
       default:
         return "red";
@@ -123,7 +126,7 @@
   <div class="status-wrapper">
     <div
       class="health-indicator"
-      style="background-color: {getHealthColor(healthStatus)}"
+      style="background-color: {getHealthColor()}"
     >
       <span class="tooltip">{getHealthText(healthStatus)}</span>
     </div>

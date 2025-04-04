@@ -1,4 +1,5 @@
 import { Effect, Option, pipe, Stream } from 'effect';
+import type { MatchParams } from './waku.svelte';
 
 // Define the type for state transition events
 export interface StateTransitionDetail {
@@ -22,7 +23,8 @@ export enum LobbyMessageType {
 	Ping = 'ping',
 	Request = 'request',
 	Accept = 'accept',
-	Match = 'match'
+	Match = 'match',
+	Ongoing = 'ongoing'
 }
 
 enum LobbyEvent {
@@ -32,7 +34,8 @@ enum LobbyEvent {
 	GotAccept = 'got_accept',
 	SentAccept = 'sent_accept',
 	GotMatch = 'got_match',
-	SentMatch = 'sent_match'
+	SentMatch = 'sent_match',
+	Ongoing = 'ongoing'
 }
 
 export type LobbyMessage = {
@@ -41,6 +44,7 @@ export type LobbyMessage = {
 	expiry?: Date;
 	from: string;
 	to?: string;
+	match?: MatchParams;
 };
 
 export enum PeerState {
@@ -51,25 +55,26 @@ export enum PeerState {
 	AcceptTo = 'accept_to',
 	AcceptFrom = 'accept_from',
 	Success = 'success',
-	Failure = 'failure'
+	Failure = 'failure',
+	Ongoing = 'ongoing'
 }
 
 // Create a class that extends EventTarget for native event handling
 class LobbyState extends EventTarget {
 	// The peer state map
 	peerState = $state(new Map<string, { state: PeerState; messages: LobbyMessage[] }>());
-	
+
 	// Method to update the state of a peer
 	updatePeerState(peerId: string, newState: PeerState, message: LobbyMessage): void {
 		const prevState = this.peerState.get(peerId)?.state || PeerState.None;
 		const messages = this.peerState.get(peerId)?.messages || [];
-		
+
 		// Update the state
-		this.peerState.set(peerId, { 
-			state: newState, 
-			messages: [...messages, message] 
+		this.peerState.set(peerId, {
+			state: newState,
+			messages: [...messages, message]
 		});
-		
+
 		// Create and dispatch the event using native event handling
 		const event = new CustomEvent<StateTransitionDetail>('state-transition', {
 			detail: {
@@ -79,7 +84,7 @@ class LobbyState extends EventTarget {
 				message
 			}
 		});
-		
+
 		this.dispatchEvent(event);
 	}
 }
@@ -104,26 +109,29 @@ type TransitionTable = {
 const stateMachine: TransitionTable = {
 	[LobbyEvent.GotPing]: {
 		[PeerState.None]: PeerState.Found,
-		[PeerState.Found]: PeerState.Found,
+		[PeerState.Found]: PeerState.Found
 	},
 	[LobbyEvent.SentRequest]: {
-		[PeerState.Found]: PeerState.RequestTo,
+		[PeerState.Found]: PeerState.RequestTo
 	},
 	[LobbyEvent.GotRequest]: {
 		[PeerState.None]: PeerState.RequestFrom,
-		[PeerState.Found]: PeerState.RequestFrom,
+		[PeerState.Found]: PeerState.RequestFrom
 	},
 	[LobbyEvent.SentAccept]: {
-		[PeerState.RequestFrom]: PeerState.AcceptTo,
+		[PeerState.RequestFrom]: PeerState.AcceptTo
 	},
 	[LobbyEvent.GotAccept]: {
-		[PeerState.RequestTo]: PeerState.AcceptFrom,
+		[PeerState.RequestTo]: PeerState.AcceptFrom
 	},
 	[LobbyEvent.SentMatch]: {
-		[PeerState.AcceptFrom]: PeerState.Success,
+		[PeerState.AcceptFrom]: PeerState.Success
 	},
 	[LobbyEvent.GotMatch]: {
-		[PeerState.AcceptTo]: PeerState.Success,
+		[PeerState.AcceptTo]: PeerState.Success
+	},
+	[LobbyEvent.Ongoing]: {
+		[PeerState.None]: PeerState.Ongoing
 	}
 };
 
@@ -142,19 +150,18 @@ function processMessage<MT extends LobbyMessageType>(
 			throw `Don't track sent pings`;
 		}
 		event = LobbyEvent.GotPing;
-	} else if (
-		message.messageType === LobbyMessageType.Request
-	) {
+	} else if (message.messageType === LobbyMessageType.Request) {
 		console.log(`Received request from ${message.from} to ${message.to || 'everyone'}`);
 		event = sent ? LobbyEvent.SentRequest : LobbyEvent.GotRequest;
-	} else if (
-		message.messageType === LobbyMessageType.Accept
-	) {
+	} else if (message.messageType === LobbyMessageType.Accept) {
 		console.log(`Received accept from ${message.from} to ${message.to || 'unknown'}`);
 		event = sent ? LobbyEvent.SentAccept : LobbyEvent.GotAccept;
 	} else if (message.messageType === LobbyMessageType.Match) {
 		console.log(`Received match between peers`);
 		event = sent ? LobbyEvent.SentMatch : LobbyEvent.GotMatch;
+	} else if (message.messageType === LobbyMessageType.Ongoing) {
+		console.log(`Received ongoing match`);
+		event = LobbyEvent.Ongoing;
 	}
 
 	// Get next state from transition table
@@ -162,7 +169,10 @@ function processMessage<MT extends LobbyMessageType>(
 		console.warn(`Invalid message type: ${message.messageType}`);
 		return Option.none();
 	}
-	const nextStateValue = stateMachine[event][currentState];
+	const nextStateValue =
+		message.messageType === LobbyMessageType.Ongoing
+			? PeerState.Ongoing
+			: stateMachine[event][currentState];
 	if (nextStateValue === undefined) {
 		// Handle invalid transitions - throw error or return current state
 		console.warn(`Invalid transition: ${event} from ${currentState}`);
@@ -171,7 +181,9 @@ function processMessage<MT extends LobbyMessageType>(
 	return Option.some(nextStateValue);
 }
 
-export async function processUpdates(updates: { peerId: string; message: LobbyMessage, sent: boolean }[]) {
+export async function processUpdates(
+	updates: { peerId: string; message: LobbyMessage; sent: boolean }[]
+) {
 	for (const update of updates) {
 		const { peerId, message, sent } = update;
 		const currentState = lobbyState.peerState.get(peerId)?.state || PeerState.None;
@@ -189,28 +201,33 @@ export async function processUpdates(updates: { peerId: string; message: LobbyMe
 }
 
 // Create a typed stream from the events
-export const stateTransitionStream = $state(Stream.map(
-	Stream.fromEventListener(lobbyState, 'state-transition', { passive: true }),
-	(event: Event) => event as CustomEvent<StateTransitionDetail>
-));
+export const stateTransitionStream = $state(
+	Stream.map(
+		Stream.fromEventListener(lobbyState, 'state-transition', { passive: true }),
+		(event: Event) => event as CustomEvent<StateTransitionDetail>
+	)
+);
 
-export function subscribeToStateTransitionStream<A>(stream: Stream.Stream<CustomEvent<A>>, onEvent: (event: A) => void): () => void {
+export function subscribeToStateTransitionStream<A>(
+	stream: Stream.Stream<CustomEvent<A>>,
+	onEvent: (event: A) => void
+): () => void {
 	const fiber = Effect.runFork(
-	  pipe(
-		stream,
-		Stream.tap((event) => 
-		  Effect.sync(() => {
-			onEvent(event.detail);
-		  })
-		),
-		Stream.runDrain
-	  )
+		pipe(
+			stream,
+			Stream.tap((event) =>
+				Effect.sync(() => {
+					onEvent(event.detail);
+				})
+			),
+			Stream.runDrain
+		)
 	);
 	return () => {
-	  Effect.runFork(
-		Effect.sync(() => {
-		  (fiber as unknown as { interrupt: () => void }).interrupt();
-		})
-	  );
+		Effect.runFork(
+			Effect.sync(() => {
+				(fiber as unknown as { interrupt: () => void }).interrupt();
+			})
+		);
 	};
-  }
+}
