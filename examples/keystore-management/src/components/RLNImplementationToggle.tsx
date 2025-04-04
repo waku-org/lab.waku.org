@@ -1,7 +1,7 @@
 "use client";
 
+import { useRLNImplementation } from '@/contexts';
 import React from 'react';
-import { useRLNImplementation } from '../contexts/rln';
 
 export function RLNImplementationToggle() {
   const { implementation, setImplementation } = useRLNImplementation();

@@ -1,21 +1,13 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { createRLN, DecryptedCredentials, LINEA_CONTRACT, RLNInstance } from '@waku/rln';
-import { useWallet } from '../../wallet';
+import { createRLN,  LINEA_CONTRACT, RLNInstance } from '@waku/rln';
 import { ethers } from 'ethers';
-import { ensureLineaSepoliaNetwork, ERC20_ABI, SIGNATURE_MESSAGE } from '../utils/network';
+import { ensureLineaSepoliaNetwork, ERC20_ABI, SIGNATURE_MESSAGE } from '../../../utils/network';
+import { RLNContextType } from './types';
+import { useWallet } from '@/contexts';
 
-interface RLNContextType {
-  rln: RLNInstance | null;
-  isInitialized: boolean;
-  isStarted: boolean;
-  error: string | null;
-  initializeRLN: () => Promise<void>;
-  registerMembership: (rateLimit: number) => Promise<{ success: boolean; error?: string; credentials?: DecryptedCredentials }>;
-  rateMinLimit: number;
-  rateMaxLimit: number;
-}
+
 
 const RLNContext = createContext<RLNContextType | undefined>(undefined);
 

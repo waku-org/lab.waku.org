@@ -1,27 +1,17 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { DecryptedCredentials, RLNInstance, RLNLightInstance } from '@waku/rln';
-import { useWallet } from '../../wallet';
+import {   RLNCredentialsManager } from '@waku/rln';
 import { ethers } from 'ethers';
-import { ensureLineaSepoliaNetwork, ERC20_ABI, SIGNATURE_MESSAGE } from '../utils/network';
-
-interface RLNContextType {
-  rln: RLNLightInstance | RLNInstance | null;
-  isInitialized: boolean;
-  isStarted: boolean;
-  error: string | null;
-  initializeRLN: () => Promise<void>;
-  registerMembership: (rateLimit: number) => Promise<{ success: boolean; error?: string; credentials?: DecryptedCredentials }>;
-  rateMinLimit: number;
-  rateMaxLimit: number;
-}
+import { ensureLineaSepoliaNetwork, ERC20_ABI, SIGNATURE_MESSAGE } from '../../../utils/network';
+import { useWallet } from '@/contexts';
+import { RLNContextType } from './types';
 
 const RLNContext = createContext<RLNContextType | undefined>(undefined);
 
 export function RLNProvider({ children }: { children: ReactNode }) {
   const { isConnected, signer } = useWallet();
-  const [rln, setRln] = useState<RLNLightInstance | RLNInstance | null>(null);
+  const [rln, setRln] = useState<RLNCredentialsManager | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +28,7 @@ export function RLNProvider({ children }: { children: ReactNode }) {
         console.log("Creating RLN instance...");
         
         try {
-          const rlnInstance = new RLNLightInstance();
+          const rlnInstance = new RLNCredentialsManager();
           
           console.log("RLN instance created successfully:", !!rlnInstance);
           setRln(rlnInstance);

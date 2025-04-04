@@ -1,7 +1,7 @@
 "use client";
 
+import { useRLN } from '@/contexts';
 import React from 'react';
-import { useRLN } from '../contexts/rln';
 
 export function RLNInitButton() {
   const { initializeRLN, isInitialized, isStarted, error, isLoading } = useRLN();

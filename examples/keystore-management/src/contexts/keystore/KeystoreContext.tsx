@@ -3,7 +3,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Keystore, KeystoreEntity } from '@waku/rln';
 
-// Define types for the context
+export const LOCAL_STORAGE_KEYSTORE_KEY = 'waku-rln-keystore';
+
 interface KeystoreContextType {
   keystore: Keystore | null;
   isInitialized: boolean;
@@ -17,10 +18,8 @@ interface KeystoreContextType {
   getDecryptedCredential: (hash: string, password: string) => Promise<KeystoreEntity | null>;
 }
 
-// Create the context
 const KeystoreContext = createContext<KeystoreContextType | undefined>(undefined);
 
-// Provider component
 export function KeystoreProvider({ children }: { children: ReactNode }) {
   const [keystore, setKeystore] = useState<Keystore | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -30,7 +29,7 @@ export function KeystoreProvider({ children }: { children: ReactNode }) {
   // Initialize keystore
   useEffect(() => {
     try {
-      const storedKeystore = localStorage.getItem('waku-rln-keystore');
+      const storedKeystore = localStorage.getItem(LOCAL_STORAGE_KEYSTORE_KEY);
       let keystoreInstance: Keystore;
 
       if (storedKeystore) {
@@ -57,7 +56,7 @@ export function KeystoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (keystore && isInitialized) {
       try {
-        localStorage.setItem('waku-rln-keystore', keystore.toString());
+        localStorage.setItem(LOCAL_STORAGE_KEYSTORE_KEY, keystore.toString());
       } catch (err) {
         console.warn("Could not save keystore to localStorage:", err);
       }
@@ -72,7 +71,7 @@ export function KeystoreProvider({ children }: { children: ReactNode }) {
     try {
       const hash = await keystore.addCredential(credentials, password);
       
-      localStorage.setItem('waku-rln-keystore', keystore.toString());
+      localStorage.setItem(LOCAL_STORAGE_KEYSTORE_KEY, keystore.toString());
       
       setStoredCredentialsHashes(keystore.keys());
       
@@ -124,7 +123,7 @@ export function KeystoreProvider({ children }: { children: ReactNode }) {
       if (imported) {
         setKeystore(imported);
         setStoredCredentialsHashes(imported.keys());
-        localStorage.setItem('waku-rln-keystore', keystoreJson);
+        localStorage.setItem(LOCAL_STORAGE_KEYSTORE_KEY, keystoreJson);
         return true;
       }
       return false;
@@ -142,7 +141,7 @@ export function KeystoreProvider({ children }: { children: ReactNode }) {
 
     keystore.removeCredential(hash);
     setStoredCredentialsHashes(keystore.keys());
-    localStorage.setItem('waku-rln-keystore', keystore.toString());
+    localStorage.setItem(LOCAL_STORAGE_KEYSTORE_KEY, keystore.toString());
   };
 
   const contextValue: KeystoreContextType = {
