@@ -1,5 +1,7 @@
-const CopyWebpackPlugin = require("copy-webpack-plugin");
 const path = require("path");
+const webpack = require("webpack");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   entry: "./src/index.ts", // Changed from index.js to index.ts
@@ -30,7 +32,11 @@ module.exports = {
   },
   plugins: [
     new CopyWebpackPlugin({
-      patterns: ["index.html", "favicon.ico", "favicon.png", "manifest.json"],
+      patterns: ["favicon.ico", "favicon.png", "manifest.json"],
+    }),
+    new HtmlWebpackPlugin({
+      template: 'index.html',
+      base: process.env.NODE_ENV === 'production' ? '/dogfooding/' : '/',
     })
   ],
 };
