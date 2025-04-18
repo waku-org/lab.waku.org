@@ -1,7 +1,5 @@
 import {
   createLightNode,
-  createEncoder,
-  createDecoder,
   DecodedMessage,
   LightNode,
   utils,
@@ -19,7 +17,6 @@ import {
   generateRandomNumber,
   sha256,
   buildExtraData,
-  DEFAULT_EXTRA_DATA_STR,
 } from "./util";
 
 const DEFAULT_CONTENT_TOPIC = "/js-waku-examples/1/message-ratio/utf8";
@@ -51,15 +48,17 @@ async function wakuNode(): Promise<LightNode> {
 
   const node = await createLightNode({
     defaultBootstrap: false,
+    numPeersToUse: 2,
     networkConfig: {
       clusterId: 42,
       shards: [0]
     },
-    numPeersToUse: 2,
     libp2p: {
       privateKey,
     },
   });
+
+  (window as any).waku = node;
 
   await node.dial("/dns4/waku-test.bloxy.one/tcp/8095/wss/p2p/16Uiu2HAmSZbDB7CusdRhgkD81VssRjQV5ZH13FbzCGcdnbbh6VwZ");
   await node.dial("/dns4/vps-aaa00d52.vps.ovh.ca/tcp/8000/wss/p2p/16Uiu2HAm9PftGgHZwWE3wzdMde4m3kT2eYJFXLZfGoSED3gysofk");
@@ -70,7 +69,6 @@ async function wakuNode(): Promise<LightNode> {
 
 export async function app(telemetryClient: TelemetryClient) {
   const node = await wakuNode();
-  (window as any).waku = node;
 
   console.log("DEBUG: your peer ID is:", node.libp2p.peerId.toString());
 
@@ -78,12 +76,8 @@ export async function app(telemetryClient: TelemetryClient) {
   await node.waitForPeers();
 
   const peerId = node.libp2p.peerId.toString();
-  const encoder = createEncoder({
-    contentTopic: DEFAULT_CONTENT_TOPIC,
-    pubsubTopicShardInfo: {
-      clusterId: 42,
-      shard: 0,
-    }
+  const encoder = node.createEncoder({
+    contentTopic: DEFAULT_CONTENT_TOPIC
   });
 
   node.libp2p.addEventListener("peer:discovery", async (event) => {
@@ -166,7 +160,7 @@ export async function app(telemetryClient: TelemetryClient) {
   };
 
   const startFilterSubscription = async () => {
-    const decoder = createDecoder(DEFAULT_CONTENT_TOPIC, { clusterId: 42, shard: 0 });
+    const decoder = node.createDecoder({ contentTopic: DEFAULT_CONTENT_TOPIC });
 
     const subscriptionCallback = async (message: DecodedMessage) => {
       const decodedMessage: any = ProtoSequencedMessage.decode(

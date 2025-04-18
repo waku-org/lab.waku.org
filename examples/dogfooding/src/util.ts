@@ -1,4 +1,3 @@
-import { Peer } from "@libp2p/interface";
 import type { LightNode } from "@waku/sdk";
 
 export const generateRandomNumber = (): number => {
@@ -19,7 +18,7 @@ export const DEFAULT_EXTRA_DATA_STR = JSON.stringify(DEFAULT_EXTRA_DATA);
 
 export const buildExtraData = async (node: LightNode, peerId: string): Promise<string> => {
   let extraData = { ...DEFAULT_EXTRA_DATA };
-  const peer: Peer = (await node.libp2p.peerStore.all()).find(p => p.id.toString() === peerId);
+  const peer = (await node.libp2p.peerStore.all()).find(p => p.id.toString() === peerId);
 
   if (!peer || peerId === node.libp2p.peerId.toString()) {
     return JSON.stringify(extraData);
