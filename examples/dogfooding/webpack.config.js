@@ -1,12 +1,12 @@
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const path = require("path");
-const webpack = require("webpack");
 
 module.exports = {
   entry: "./src/index.ts", // Changed from index.js to index.ts
   output: {
     path: path.resolve(__dirname, "build"),
     filename: "index.js",
+    publicPath: process.env.NODE_ENV === 'production' ? '/dogfooding/' : '/'
   },
   experiments: {
     asyncWebAssembly: true,
@@ -31,9 +31,6 @@ module.exports = {
   plugins: [
     new CopyWebpackPlugin({
       patterns: ["index.html", "favicon.ico", "favicon.png", "manifest.json"],
-    }),
-    new webpack.DefinePlugin({
-      'process.env.TELEMETRY_URL': JSON.stringify(process.env.TELEMETRY_URL || "https://telemetry.status.im/waku-metrics")
-    }),
+    })
   ],
 };
