@@ -47,8 +47,12 @@ async function wakuNode(): Promise<LightNode> {
   const privateKey = await generateKeyPairFromSeed("Ed25519", fromString(seed));
 
   const node = await createLightNode({
-    defaultBootstrap: true,
+    defaultBootstrap: false,
     numPeersToUse: 2,
+    networkConfig: {
+      clusterId: 42,
+      shards: [0]
+    },
     libp2p: {
       privateKey,
     },
