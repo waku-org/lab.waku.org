@@ -58,12 +58,17 @@ async function wakuNode(): Promise<LightNode> {
     },
   });
 
+  (window as any).waku = node;
+
+  await node.dial("/dns4/waku-test.bloxy.one/tcp/8095/wss/p2p/16Uiu2HAmSZbDB7CusdRhgkD81VssRjQV5ZH13FbzCGcdnbbh6VwZ");
+  await node.dial("/dns4/vps-aaa00d52.vps.ovh.ca/tcp/8000/wss/p2p/16Uiu2HAm9PftGgHZwWE3wzdMde4m3kT2eYJFXLZfGoSED3gysofk");
+  await node.dial("/dns4/waku.fryorcraken.xyz/tcp/8000/wss/p2p/16Uiu2HAmMRvhDHrtiHft1FTUYnn6cVA8AWVrTyLUayJJ3MWpUZDB");
+
   return node;
 }
 
 export async function app(telemetryClient: TelemetryClient) {
   const node = await wakuNode();
-  (window as any).waku = node;
 
   console.log("DEBUG: your peer ID is:", node.libp2p.peerId.toString());
 
