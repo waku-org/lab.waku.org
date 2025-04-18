@@ -2,29 +2,17 @@ import {
   createLightNode,
   DecodedMessage,
   LightNode,
-  utils,
 } from "@waku/sdk";
 import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 import { fromString } from "uint8arrays";
 
 import { Type, Field } from "protobufjs";
 import {
-  TelemetryClient,
-  TelemetryPushFilter,
-  TelemetryType,
-} from "./telemetry_client";
-import {
   generateRandomNumber,
   sha256,
-  buildExtraData,
 } from "./util";
 
 const DEFAULT_CONTENT_TOPIC = "/js-waku-examples/1/message-ratio/utf8";
-const DEFAULT_PUBSUB_TOPIC = utils.contentTopicToPubsubTopic(
-  DEFAULT_CONTENT_TOPIC
-);
-const TELEMETRY_URL =
-  process.env.TELEMETRY_URL || "http://localhost:8080/waku-metrics";
 
 const ProtoSequencedMessage = new Type("SequencedMessage")
   .add(new Field("hash", 1, "string"))
@@ -33,7 +21,6 @@ const ProtoSequencedMessage = new Type("SequencedMessage")
   .add(new Field("sender", 4, "string"));
 
 const sequenceCompletedEvent = new CustomEvent("sequenceCompleted");
-const messageSentEvent = new CustomEvent("messageSent");
 const messageReceivedEvent = new CustomEvent("messageReceived");
 
 async function wakuNode(): Promise<LightNode> {
@@ -67,7 +54,7 @@ async function wakuNode(): Promise<LightNode> {
   return node;
 }
 
-export async function app(telemetryClient: TelemetryClient) {
+export async function app() {
   const node = await wakuNode();
 
   console.log("DEBUG: your peer ID is:", node.libp2p.peerId.toString());
@@ -78,31 +65,6 @@ export async function app(telemetryClient: TelemetryClient) {
   const peerId = node.libp2p.peerId.toString();
   const encoder = node.createEncoder({
     contentTopic: DEFAULT_CONTENT_TOPIC
-  });
-
-  node.libp2p.addEventListener("peer:discovery", async (event) => {
-    const discoveredPeerId = event.detail.id.toString();
-
-    const timestamp = Math.floor(new Date().getTime() / 1000);
-    const extraData = await buildExtraData(node, discoveredPeerId);
-    const hash = await sha256(`${peerId}-${discoveredPeerId}-${timestamp}`);
-
-    telemetryClient.push<TelemetryPushFilter>([
-      {
-        type: TelemetryType.LIGHT_PUSH_FILTER,
-        protocol: "discovery",
-        timestamp,
-        createdAt: timestamp,
-        seenTimestamp: timestamp,
-        peerId,
-        contentTopic: DEFAULT_CONTENT_TOPIC,
-        pubsubTopic: DEFAULT_PUBSUB_TOPIC,
-        ephemeral: false,
-        messageHash: hash,
-        errorMessage: "",
-        extraData,
-      },
-    ]);
   });
 
   const startLightPushSequence = async (
@@ -171,8 +133,6 @@ export async function app(telemetryClient: TelemetryClient) {
         return;
       }
 
-      const timestamp = Math.floor(new Date().getTime() / 1000);
-
       const messageElement = document.createElement("div");
       messageElement.textContent = `Message: ${decodedMessage.hash}`;
       document.dispatchEvent(messageReceivedEvent);
@@ -189,10 +149,7 @@ export async function app(telemetryClient: TelemetryClient) {
 }
 
 (async () => {
-  const telemetryClient = new TelemetryClient(TELEMETRY_URL, 5000);
-  const { node, startLightPushSequence, startFilterSubscription } = await app(
-    telemetryClient
-  );
+  const { startLightPushSequence, startFilterSubscription } = await app();
 
   startFilterSubscription();
 
