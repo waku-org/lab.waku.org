@@ -1,51 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Sent Received Message Ratio</title>
+    <title>Waku Dogfooding - Refactored</title>
     <link rel="apple-touch-icon" href="./favicon.png" />
     <link rel="manifest" href="./manifest.json" />
     <link rel="icon" href="./favicon.ico" />
-    <style>
-      #container {
-        display: flex;
-        height: 100vh;
-      }
-      #sender,
-      #receiver {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-      }
-    </style>
-  </head>
-  <body>
-    <div>
-      <h3>Waku Dogfooding App</h3>
-      <div id="runningScreen" style="display: none">
-        <label for="peerID">Your peer ID:</label>
-        <span id="peerID"></span>
-        <br />
-        <label for="numSent">Messages Sent:</label>
-        <span id="numSent">0</span>
-        <br />
-        <label for="numReceived">Messages Received:</label>
-        <span id="numReceived">0</span>
-      </div>
-    </div>
-    <div id="container">
-      <div id="sender">
-        <h3>Sent</h3>
-        <div id="messagesSent"></div>
-      </div>
-      <div id="receiver">
-        <h3>Received</h3>
-        <div id="messagesReceived"></div>
-      </div>
+    <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Waku Message Center</h1>
+            <div class="connection-status">
+                <span>Your Peer ID: <span id="peerIdDisplay">Connecting...</span></span>
+            </div>
+        </header>
+
+        <main>
+            <section class="message-stats">
+                <h2>Message Statistics</h2>
+                <div class="stats-counters">
+                    <div>
+                        <span class="counter-value" id="sentByMeCount">0</span>
+                        <span class="counter-label">Sent by Me</span>
+                    </div>
+                    <div>
+                        <span class="counter-value" id="receivedMineCount">0</span>
+                        <span class="counter-label">Received (Mine)</span>
+                    </div>
+                    <div>
+                        <span class="counter-value" id="receivedOthersCount">0</span>
+                        <span class="counter-label">Received (Others)</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="message-controls">
+                <h2>Controls</h2>
+                <button id="sendMessageButton" class="btn btn-primary">Send New Message Batch</button>
+                <div class="search-container">
+                    <input type="text" id="searchInput" placeholder="Search messages by content..." />
+                    <button id="searchButton" class="btn">Search</button>
+                </div>
+            </section>
+
+            <section class="message-display">
+                <h2>Message Log</h2>
+                <div id="messageList" class="message-list">
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Waku Dogfooding App - Modern UI</p>
+        </footer>
     </div>
     <script src="./index.js"></script>
-  </body>
+</body>
 </html>

@@ -2,7 +2,7 @@ const CopyWebpackPlugin = require("copy-webpack-plugin");
 const path = require("path");
 
 module.exports = {
-  entry: "./src/index.ts", // Changed from index.js to index.ts
+  entry: "./src/index.ts",
   output: {
     path: path.resolve(__dirname, "build"),
     filename: "index.js",
@@ -11,12 +11,12 @@ module.exports = {
     asyncWebAssembly: true,
   },
   resolve: {
-    extensions: ['.ts', '.js'], // Add .ts to the extensions
+    extensions: ['.ts', '.js'],
   },
   module: {
     rules: [
       {
-        test: /\.ts$/, // Add a rule for TypeScript files
+        test: /\.ts$/,
         use: 'ts-loader',
         exclude: /node_modules/,
       },
@@ -29,7 +29,13 @@ module.exports = {
   },
   plugins: [
     new CopyWebpackPlugin({
-      patterns: ["index.html", "favicon.ico", "favicon.png", "manifest.json"],
+      patterns: [
+        { from: "index.html", to: "index.html" },
+        { from: "public/style.css", to: "style.css" },
+        { from: "manifest.json", to: "manifest.json" },
+        { from: "favicon.ico", to: "favicon.ico" },
+        { from: "favicon.png", to: "favicon.png" },
+      ],
     }),
   ],
 };
