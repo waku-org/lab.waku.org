@@ -11,23 +11,11 @@ import { fromString } from "uint8arrays";
 
 import { Type, Field } from "protobufjs";
 import {
-  TelemetryClient,
-  TelemetryPushFilter,
-  TelemetryType,
-} from "./telemetry_client";
-import {
   generateRandomNumber,
   sha256,
-  buildExtraData,
-  DEFAULT_EXTRA_DATA_STR,
 } from "./util";
 
 const DEFAULT_CONTENT_TOPIC = "/js-waku-examples/1/message-ratio/utf8";
-const DEFAULT_PUBSUB_TOPIC = utils.contentTopicToPubsubTopic(
-  DEFAULT_CONTENT_TOPIC
-);
-const TELEMETRY_URL =
-  process.env.TELEMETRY_URL || "http://localhost:8080/waku-metrics";
 
 const ProtoSequencedMessage = new Type("SequencedMessage")
   .add(new Field("hash", 1, "string"))
@@ -36,8 +24,6 @@ const ProtoSequencedMessage = new Type("SequencedMessage")
   .add(new Field("sender", 4, "string"));
 
 const sequenceCompletedEvent = new CustomEvent("sequenceCompleted");
-const messageSentEvent = new CustomEvent("messageSent");
-const messageReceivedEvent = new CustomEvent("messageReceived");
 
 async function wakuNode(): Promise<LightNode> {
   let seed = localStorage.getItem("seed");
@@ -61,16 +47,18 @@ async function wakuNode(): Promise<LightNode> {
     },
   });
 
-  await node.dial("/dns4/waku-test.bloxy.one/tcp/8095/wss/p2p/16Uiu2HAmSZbDB7CusdRhgkD81VssRjQV5ZH13FbzCGcdnbbh6VwZ");
-  await node.dial("/dns4/vps-aaa00d52.vps.ovh.ca/tcp/8000/wss/p2p/16Uiu2HAm9PftGgHZwWE3wzdMde4m3kT2eYJFXLZfGoSED3gysofk");
-  await node.dial("/dns4/waku.fryorcraken.xyz/tcp/8000/wss/p2p/16Uiu2HAmMRvhDHrtiHft1FTUYnn6cVA8AWVrTyLUayJJ3MWpUZDB");
+  (window as any).waku = node;
+
+  await Promise.allSettled([
+    node.dial("/dns4/waku-test.bloxy.one/tcp/8095/wss/p2p/16Uiu2HAmSZbDB7CusdRhgkD81VssRjQV5ZH13FbzCGcdnbbh6VwZ"),
+    node.dial("/dns4/vps-aaa00d52.vps.ovh.ca/tcp/8000/wss/p2p/16Uiu2HAm9PftGgHZwWE3wzdMde4m3kT2eYJFXLZfGoSED3gysofk")
+  ]);
 
   return node;
 }
 
-export async function app(telemetryClient: TelemetryClient) {
+export async function app() {
   const node = await wakuNode();
-  (window as any).waku = node;
 
   console.log("DEBUG: your peer ID is:", node.libp2p.peerId.toString());
 
@@ -84,31 +72,6 @@ export async function app(telemetryClient: TelemetryClient) {
       clusterId: 42,
       shard: 0,
     }
-  });
-
-  node.libp2p.addEventListener("peer:discovery", async (event) => {
-    const discoveredPeerId = event.detail.id.toString();
-
-    const timestamp = Math.floor(new Date().getTime() / 1000);
-    const extraData = await buildExtraData(node, discoveredPeerId);
-    const hash = await sha256(`${peerId}-${discoveredPeerId}-${timestamp}`);
-
-    telemetryClient.push<TelemetryPushFilter>([
-      {
-        type: TelemetryType.LIGHT_PUSH_FILTER,
-        protocol: "discovery",
-        timestamp,
-        createdAt: timestamp,
-        seenTimestamp: timestamp,
-        peerId,
-        contentTopic: DEFAULT_CONTENT_TOPIC,
-        pubsubTopic: DEFAULT_PUBSUB_TOPIC,
-        ephemeral: false,
-        messageHash: hash,
-        errorMessage: "",
-        extraData,
-      },
-    ]);
   });
 
   const startLightPushSequence = async (
@@ -125,7 +88,6 @@ export async function app(telemetryClient: TelemetryClient) {
           `${sequenceHash}-${sequenceIndex}-${sequenceTotal}`
         );
 
-        const timestamp = Math.floor(new Date().getTime() / 1000);
         const message = ProtoSequencedMessage.create({
           hash: messageHash,
           total: sequenceTotal,
@@ -157,6 +119,13 @@ export async function app(telemetryClient: TelemetryClient) {
         } else {
           document.dispatchEvent(sequenceCompletedEvent);
         }
+
+        if ( result.successes.length > 0) {
+          const messageElement = document.createElement("div");
+          messageElement.textContent = messageHash;
+
+          document.getElementById("messagesSent")?.appendChild(messageElement);
+        }
       } catch (error) {
         console.error("DEBUG: Error sending message", error);
       }
@@ -177,14 +146,14 @@ export async function app(telemetryClient: TelemetryClient) {
         return;
       }
 
-      const timestamp = Math.floor(new Date().getTime() / 1000);
-
       const messageElement = document.createElement("div");
-      messageElement.textContent = `Message: ${decodedMessage.hash}`;
-      document.dispatchEvent(messageReceivedEvent);
+      messageElement.textContent = decodedMessage.hash;
+
+      document.getElementById("messagesReceived")?.appendChild(messageElement);
     };
 
-    await node.filter.subscribe(decoder, subscriptionCallback);
+    await node.nextFilter.subscribe(decoder, subscriptionCallback);
+    await node.nextFilter.subscribe(decoder, subscriptionCallback);
   };
 
   return {
@@ -195,10 +164,7 @@ export async function app(telemetryClient: TelemetryClient) {
 }
 
 (async () => {
-  const telemetryClient = new TelemetryClient(TELEMETRY_URL, 5000);
-  const { node, startLightPushSequence, startFilterSubscription } = await app(
-    telemetryClient
-  );
+  const { startLightPushSequence, startFilterSubscription } = await app();
 
   startFilterSubscription();
 
