@@ -1,7 +1,7 @@
 export const generateRandomNumber = (): number => {
-    return Math.floor(Math.random() * 1000000);
-  };
-  
+  return Math.floor(Math.random() * 1000000);
+};
+
 export const sha256 = async (number: number | string ): Promise<string> => {
     const encoder = new TextEncoder();
     const data = encoder.encode(number.toString());

@@ -1,4 +1,3 @@
-const CopyWebpackPlugin = require("copy-webpack-plugin");
 const path = require("path");
 
 module.exports = {
@@ -6,6 +5,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, "build"),
     filename: "index.js",
+    publicPath: process.env.NODE_ENV === 'production' ? '/dogfooding/' : '/'
   },
   experiments: {
     asyncWebAssembly: true,
@@ -37,5 +37,9 @@ module.exports = {
         { from: "favicon.png", to: "favicon.png" },
       ],
     }),
+    new HtmlWebpackPlugin({
+      template: 'index.html',
+      base: process.env.NODE_ENV === 'production' ? '/dogfooding/' : '/',
+    })
   ],
 };
