@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Waku Dogfooding - Refactored</title>
-    <link rel="apple-touch-icon" href="./favicon.png" />
-    <link rel="manifest" href="./manifest.json" />
-    <link rel="icon" href="./favicon.ico" />
-    <link rel="stylesheet" href="./style.css" />
+    <link rel="apple-touch-icon" href="<%= htmlWebpackPlugin.options.publicPath %>favicon.png" />
+    <link rel="manifest" href="<%= htmlWebpackPlugin.options.publicPath %>manifest.json" />
+    <link rel="icon" href="<%= htmlWebpackPlugin.options.publicPath %>favicon.ico" />
+    <link rel="stylesheet" href="<%= htmlWebpackPlugin.options.publicPath %>style.css" />
 </head>
 <body>
     <div class="app-container">
@@ -57,6 +57,5 @@
             <p>Waku Dogfooding App - Modern UI</p>
         </footer>
     </div>
-    <script src="./index.js"></script>
 </body>
 </html>
