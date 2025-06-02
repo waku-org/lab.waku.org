@@ -1,11 +1,15 @@
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const path = require("path");
 
+const isProduction = process.env.NODE_ENV === 'production';
+const publicPath = isProduction ? '/dogfooding/' : '/';
+
 module.exports = {
   entry: "./src/index.ts",
   output: {
     path: path.resolve(__dirname, "build"),
     filename: "index.js",
+    publicPath: publicPath,
   },
   experiments: {
     asyncWebAssembly: true,
