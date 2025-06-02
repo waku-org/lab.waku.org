@@ -1,4 +1,5 @@
 const CopyWebpackPlugin = require("copy-webpack-plugin");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 const path = require("path");
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -32,9 +33,18 @@ module.exports = {
     global: false
   },
   plugins: [
+    new HtmlWebpackPlugin({
+      template: "index.html",
+      filename: "index.html",
+      inject: 'head',
+      scriptLoading: 'defer',
+      publicPath: publicPath,
+      templateParameters: {
+        removeScript: true
+      }
+    }),
     new CopyWebpackPlugin({
       patterns: [
-        { from: "index.html", to: "index.html" },
         { from: "public/style.css", to: "style.css" },
         { from: "manifest.json", to: "manifest.json" },
         { from: "favicon.ico", to: "favicon.ico" },
