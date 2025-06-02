@@ -77,7 +77,7 @@ async function initializeApp() {
     const subscribeToMessages = async () => {
       const decoder = createWakuDecoder();
       console.log("Subscribing to messages...");
-      await node.filter.subscribe(decoder, (wakuMessage: DecodedMessage) => { 
+      await node.nextFilter.subscribe(decoder, (wakuMessage: DecodedMessage) => { 
         console.log("Raw Waku message received, payload length:", wakuMessage.payload.length);
         const chatMessage = decodeMessage(wakuMessage.payload);
 
