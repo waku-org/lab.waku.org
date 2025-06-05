@@ -13,6 +13,10 @@ export interface ChatMessage {
     timestamp: number;
     senderPeerId: string;
     content: string;
+    failureInfo?: {
+        error: string;
+        peer?: string;
+    };
 }
 
 export function encodeMessage(content: string): Uint8Array {

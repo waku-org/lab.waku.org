@@ -16,6 +16,7 @@ import {
   incrementSentByMe,
   incrementReceivedMine,
   incrementReceivedOthers,
+  incrementFailedToSend,
   addMessageToLog,
   renderMessages,
   getSearchTerm,
@@ -67,9 +68,33 @@ async function initializeApp() {
             addMessageToLog(chatMessage, 'sent');
           } else {
             console.warn(`Failed to send message ${i + 1} (ID: ${chatMessage.id}):`, result.failures);
+            const failureReason = result.failures.length > 0 
+              ? String(result.failures[0].error) || 'Unknown error'
+              : 'No peers available';
+            const failedPeer = result.failures.length > 0 
+              ? result.failures[0].peerId?.toString()
+              : undefined;
+            
+            const failedMessage: ChatMessage = {
+              ...chatMessage,
+              failureInfo: {
+                error: failureReason,
+                peer: failedPeer
+              }
+            };
+            incrementFailedToSend();
+            addMessageToLog(failedMessage, 'failed');
           }
         } catch (error) {
           console.error(`Error sending message ${i + 1} (ID: ${chatMessage.id}):`, error);
+          const failedMessage: ChatMessage = {
+            ...chatMessage,
+            failureInfo: {
+              error: String(error) || 'Unknown error'
+            }
+          };
+          incrementFailedToSend();
+          addMessageToLog(failedMessage, 'failed');
         }
         await new Promise(resolve => setTimeout(resolve, 100));
       }

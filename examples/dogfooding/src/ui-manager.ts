@@ -6,10 +6,12 @@ const receivedOthersCountEl = document.getElementById("receivedOthersCount") as 
 const peerIdDisplayEl = document.getElementById("peerIdDisplay") as HTMLSpanElement;
 const messageListEl = document.getElementById("messageList") as HTMLDivElement;
 const searchInputEl = document.getElementById("searchInput") as HTMLInputElement;
+const failedToSendCountEl = document.getElementById("failedToSendCount") as HTMLSpanElement;
 
 let sentByMe = 0;
 let receivedMine = 0;
 let receivedOthers = 0;
+let failedToSend = 0;
 
 let currentMessages: ChatMessage[] = [];
 let currentPeerId: string | undefined;
@@ -36,7 +38,12 @@ export function incrementReceivedOthers() {
     if (receivedOthersCountEl) receivedOthersCountEl.textContent = receivedOthers.toString();
 }
 
-export function addMessageToLog(message: ChatMessage, type: 'sent' | 'received-mine' | 'received-other') {
+export function incrementFailedToSend() {
+    failedToSend++;
+    if (failedToSendCountEl) failedToSendCountEl.textContent = failedToSend.toString();
+}
+
+export function addMessageToLog(message: ChatMessage, type: 'sent' | 'received-mine' | 'received-other' | 'failed') {
     currentMessages.push(message);
     renderMessages(); 
 }
@@ -66,7 +73,12 @@ export function renderMessages(filterText?: string) {
         let typeClass = '';
         let senderPrefix = '';
 
-        if (message.senderPeerId === currentPeerId) {
+        if (message.failureInfo) {
+            typeClass = 'failed';
+            senderPrefix = 'Me (Failed)';
+            item.style.backgroundColor = '#ffebee';
+            item.style.borderLeft = '4px solid #f44336';
+        } else if (message.senderPeerId === currentPeerId) {
             typeClass = 'sent';
             senderPrefix = 'Me';
         } else {
@@ -96,6 +108,17 @@ export function renderMessages(filterText?: string) {
         item.appendChild(senderInfoP);
         item.appendChild(contentP);
         item.appendChild(timestampP);
+
+        // Add failure information if present
+        if (message.failureInfo) {
+            const failureInfoP = document.createElement("p");
+            failureInfoP.classList.add("failure-info");
+            failureInfoP.style.color = '#d32f2f';
+            failureInfoP.style.fontWeight = 'bold';
+            failureInfoP.textContent = `Failed: ${message.failureInfo.error}${message.failureInfo.peer ? ` (Peer: ${message.failureInfo.peer.substring(0, 12)}...)` : ''}`;
+            item.appendChild(failureInfoP);
+        }
+
         messageListEl.appendChild(item);
     });
 }
