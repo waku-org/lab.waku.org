@@ -26,6 +26,11 @@ export async function getWakuNode(): Promise<LightNode> {
             clusterId: 42,
             shards: [0]
         },
+        discovery: {
+            dns: false,
+            peerExchange: true,
+            localPeerCache: false,
+        },
         numPeersToUse: 2,
         libp2p: {
             privateKey,
