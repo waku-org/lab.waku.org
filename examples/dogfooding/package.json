@@ -9,7 +9,7 @@
   "dependencies": {
     "@libp2p/crypto": "^5.0.5",
     "@multiformats/multiaddr": "^12.3.1",
-    "@waku/sdk": "0.0.32-16328a3.0",
+    "@waku/sdk": "0.0.32-4997440.0",
     "libp2p": "^2.1.10",
     "protobufjs": "^7.3.0",
     "uint8arrays": "^5.1.0"
