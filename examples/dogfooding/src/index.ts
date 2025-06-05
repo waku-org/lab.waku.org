@@ -23,6 +23,8 @@ import {
 
 const NUM_MESSAGES_PER_BATCH = 5;
 let batchCounter = 0;
+let continuousSendingIntervalId: number | null = null;
+let isContinuousSending = false;
 
 async function initializeApp() {
   try {
@@ -74,6 +76,59 @@ async function initializeApp() {
       console.log("Message batch sending complete.");
     };
 
+    const startContinuousSending = async () => {
+      if (isContinuousSending) return;
+      isContinuousSending = true;
+      const toggleButton = document.getElementById("toggleContinuousSendButton");
+      if (toggleButton) toggleButton.textContent = "Stop Continuous Sending";
+      if (toggleButton) toggleButton.classList.replace("btn-success", "btn-danger");
+
+      console.log("Starting continuous message sending...");
+      continuousSendingIntervalId = window.setInterval(async () => {
+        const encoder = createWakuEncoder();
+        const messageContent = `Continuous Send @ ${new Date().toLocaleTimeString()}`;
+        const payload = encodeMessage(messageContent);
+        const tempDecodedMessage = ProtoChatMessage.decode(payload);
+        const messageId = (tempDecodedMessage as any).id || `temp-id-${Date.now()}`;
+
+        const chatMessage: ChatMessage = {
+          id: messageId,
+          timestamp: Date.now(),
+          senderPeerId: getPeerId() || "unknown",
+          content: messageContent
+        };
+
+        try {
+          const result = await node.lightPush.send(encoder, {
+            payload,
+            timestamp: new Date(chatMessage.timestamp),
+          }, { autoRetry: true });
+
+          if (result.successes.length > 0) {
+            console.log(`Continuous message (ID: ${chatMessage.id}) sent successfully.`);
+            incrementSentByMe();
+            addMessageToLog(chatMessage, 'sent');
+          } else {
+            console.warn(`Failed to send continuous message (ID: ${chatMessage.id}):`, result.failures);
+          }
+        } catch (error) {
+          console.error(`Error sending continuous message (ID: ${chatMessage.id}):`, error);
+        }
+      }, 2000); // Send a message every 2 seconds
+    };
+
+    const stopContinuousSending = () => {
+      if (!isContinuousSending || continuousSendingIntervalId === null) return;
+      isContinuousSending = false;
+      const toggleButton = document.getElementById("toggleContinuousSendButton");
+      if (toggleButton) toggleButton.textContent = "Start Continuous Sending";
+      if (toggleButton) toggleButton.classList.replace("btn-danger", "btn-success");
+
+      console.log("Stopping continuous message sending...");
+      clearInterval(continuousSendingIntervalId);
+      continuousSendingIntervalId = null;
+    };
+
     const subscribeToMessages = async () => {
       const decoder = createWakuDecoder();
       console.log("Subscribing to messages...");
@@ -103,6 +158,17 @@ async function initializeApp() {
       sendMessageButton.addEventListener("click", () => {
         console.log("Send Message Button clicked");
         sendMessageBatch();
+      });
+    }
+
+    const toggleContinuousSendButton = document.getElementById("toggleContinuousSendButton");
+    if (toggleContinuousSendButton) {
+      toggleContinuousSendButton.addEventListener("click", () => {
+        if (isContinuousSending) {
+          stopContinuousSending();
+        } else {
+          startContinuousSending();
+        }
       });
     }
 
