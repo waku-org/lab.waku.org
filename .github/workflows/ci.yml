@@ -50,6 +50,11 @@ jobs:
           fi
         working-directory: "examples/${{ matrix.example }}"
 
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+        working-directory: "examples/${{ matrix.example }}"
+        if: matrix.example == 'dogfooding'
+
       - name: test
         run: npm run test --if-present
         working-directory: "examples/${{ matrix.example }}"
