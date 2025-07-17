@@ -22,10 +22,6 @@ export async function getWakuNode(): Promise<LightNode> {
 
     const node = await createLightNode({
         defaultBootstrap: true,
-        // networkConfig: {
-        //     clusterId: 42,
-        //     shards: [0]
-        // },
         discovery: {
             dns: true,
             peerExchange: true,
@@ -38,11 +34,6 @@ export async function getWakuNode(): Promise<LightNode> {
     });
 
     (window as any).waku = node;
-
-    // await Promise.allSettled([
-    //     node.dial("/dns4/waku-test.bloxy.one/tcp/8095/wss/p2p/16Uiu2HAmSZbDB7CusdRhgkD81VssRjQV5ZH13FbzCGcdnbbh6VwZ"),
-    //     node.dial("/dns4/vps-aaa00d52.vps.ovh.ca/tcp/8000/wss/p2p/16Uiu2HAm9PftGgHZwWE3wzdMde4m3kT2eYJFXLZfGoSED3gysofk")
-    // ]);
 
     await node.start();
     await node.waitForPeers();
@@ -58,13 +49,9 @@ export function getPeerId(): string | undefined {
 export function createWakuEncoder() {
     return createEncoder({
         contentTopic: DEFAULT_CONTENT_TOPIC,
-        // pubsubTopicShardInfo: {
-        //     clusterId: 42,
-        //     shard: 0,
-        // }
     });
 }
 
 export function createWakuDecoder() {
-    return createDecoder(DEFAULT_CONTENT_TOPIC/*, { clusterId: 42, shard: 0 }*/);
+    return createDecoder(DEFAULT_CONTENT_TOPIC);
 }
