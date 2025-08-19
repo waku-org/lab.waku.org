@@ -157,10 +157,16 @@ async function initializeApp() {
     const subscribeToMessages = async () => {
       const decoder = createWakuDecoder();
 
-      (window as any)["storeQuery"] = () => {
-        node.store.queryWithOrderedCallback([decoder], (msg) => {
-          console.log("DEBUG", msg);
-        });
+      (window as any)["storeQuery"] = async () => {
+        const generator = node.store.queryGenerator([decoder], { timeStart: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30), timeEnd: new Date() });
+        try {
+          for await (const messages of generator) {
+            const m = await Promise.all(messages);
+            console.log("DEBUG messages", m);
+          }
+        } catch (error) {
+          console.error("Error querying store:", error);
+        }
       };
 
       console.log("Subscribing to messages...");
