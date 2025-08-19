@@ -1,4 +1,4 @@
-import { LightNode, createLightNode, createEncoder, createDecoder } from "@waku/sdk";
+import { LightNode, createLightNode } from "@waku/sdk";
 import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 import { fromString } from "uint8arrays";
 import { sha256, generateRandomNumber } from "./utils";
@@ -25,12 +25,12 @@ export async function getWakuNode(): Promise<LightNode> {
         discovery: {
             dns: true,
             peerExchange: true,
-            localPeerCache: false,
+            peerCache: true,
         },
         numPeersToUse: 2,
         libp2p: {
             privateKey,
-        }
+        },
     });
 
     (window as any).waku = node;
@@ -47,11 +47,13 @@ export function getPeerId(): string | undefined {
 }
 
 export function createWakuEncoder() {
-    return createEncoder({
+    return wakuNodeInstance!.createEncoder({
         contentTopic: DEFAULT_CONTENT_TOPIC,
     });
 }
 
 export function createWakuDecoder() {
-    return createDecoder(DEFAULT_CONTENT_TOPIC);
+    return wakuNodeInstance!.createDecoder({
+        contentTopic: DEFAULT_CONTENT_TOPIC,
+    });
 }
