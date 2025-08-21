@@ -59,8 +59,8 @@ async function initializeApp() {
         try {
           const result = await node.lightPush.send(encoder, {
             payload,
-            timestamp: new Date(chatMessage.timestamp),
-          }, { autoRetry: true });
+            timestamp: new Date(chatMessage.timestamp)
+          });
 
           if (result.successes.length > 0) {
             console.log(`Message ${i + 1} (ID: ${chatMessage.id}) sent successfully.`);
@@ -126,8 +126,8 @@ async function initializeApp() {
         try {
           const result = await node.lightPush.send(encoder, {
             payload,
-            timestamp: new Date(chatMessage.timestamp),
-          }, { autoRetry: true });
+            timestamp: new Date(chatMessage.timestamp)
+          });
 
           if (result.successes.length > 0) {
             console.log(`Continuous message (ID: ${chatMessage.id}) sent successfully.`);
