@@ -115,6 +115,43 @@ h2 {
     padding: 10px;
 }
 
+.collapsible-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.collapsible.hidden {
+    display: none;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table th, table td {
+    padding: 8px;
+    border-bottom: 1px solid #ecf0f1;
+    text-align: left;
+    font-size: 0.9em;
+}
+
+.latency-summary {
+    margin-top: 8px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #34495e;
+}
+
+/* Scrollable tables */
+#discoveryTableContainer,
+#connectionsTableContainer,
+#latencyTableContainer {
+    max-height: 260px;
+    overflow-y: auto;
+}
+
 .message-item {
     padding: 10px;
     margin-bottom: 8px;

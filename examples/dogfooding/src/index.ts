@@ -20,6 +20,13 @@ import {
   addMessageToLog,
   renderMessages,
   getSearchTerm,
+  initCharts,
+  onDiscoveryUpdate,
+  onConnectionsUpdate,
+  wireUiToggles,
+  trackMessageSent,
+  trackMessageReceived,
+  recordLatency,
 } from "./ui-manager";
 
 const NUM_MESSAGES_PER_BATCH = 5;
@@ -66,6 +73,7 @@ async function initializeApp() {
             console.log(`Message ${i + 1} (ID: ${chatMessage.id}) sent successfully.`);
             incrementSentByMe();
             addMessageToLog(chatMessage, 'sent');
+            trackMessageSent(chatMessage.id, chatMessage.timestamp);
           } else {
             console.warn(`Failed to send message ${i + 1} (ID: ${chatMessage.id}):`, result.failures);
             const failureReason = result.failures.length > 0 
@@ -133,6 +141,7 @@ async function initializeApp() {
             console.log(`Continuous message (ID: ${chatMessage.id}) sent successfully.`);
             incrementSentByMe();
             addMessageToLog(chatMessage, 'sent');
+            trackMessageSent(chatMessage.id, chatMessage.timestamp);
           } else {
             console.warn(`Failed to send continuous message (ID: ${chatMessage.id}):`, result.failures);
           }
@@ -184,6 +193,12 @@ async function initializeApp() {
             addMessageToLog(chatMessage, 'received-other');
             console.log("Received message from other peer:", chatMessage.id);
           }
+          // Use encoded timestamp when available for more accurate latency
+          if (chatMessage.timestamp) {
+            recordLatency(chatMessage.id, chatMessage.timestamp, Date.now());
+          } else {
+            trackMessageReceived(chatMessage.id, Date.now());
+          }
         } else {
           console.warn("Could not decode received Waku message. Payload might be malformed or not a ChatMessage.");
         }
@@ -226,6 +241,10 @@ async function initializeApp() {
       });
     }
 
+    initCharts();
+    (window as any).onDiscoveryUpdate = onDiscoveryUpdate;
+    (window as any).onConnectionsUpdate = onConnectionsUpdate;
+    wireUiToggles();
     await subscribeToMessages();
     
     console.log("Application setup complete. Click 'Send New Message Batch' to send messages.");
