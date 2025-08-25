@@ -51,9 +51,69 @@
                 </div>
             </section>
 
+            <section class="charts">
+                <h2>Discovery Peers Over Time</h2>
+                <canvas id="discoveryChart"></canvas>
+                <div id="discoverySummaryTop" class="latency-summary"></div>
+                <div class="collapsible-header" id="toggleDiscoveryTable">
+                    <h3>Show Discovery Table</h3>
+                    <button id="toggleDiscoveryTableBtn" class="btn">Show</button>
+                </div>
+                <div id="discoveryTableContainer" class="collapsible hidden">
+                    <table id="discoveryTable">
+                        <thead>
+                            <tr><th>Time</th><th>Type</th><th>Total Peers</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            
+
+            <section class="charts">
+                <h2>Connected Peers Over Time</h2>
+                <canvas id="connectionsChart"></canvas>
+                <div id="ttfcSummary" class="latency-summary"></div>
+                <div class="collapsible-header" id="toggleConnectionsTable">
+                    <h3>Show Connections Table</h3>
+                    <button id="toggleConnectionsTableBtn" class="btn">Show</button>
+                </div>
+                <div id="connectionsTableContainer" class="collapsible hidden">
+                    <table id="connectionsTable">
+                        <thead>
+                            <tr><th>Time</th><th>Connected Peers</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="charts">
+                <h2>Message Delivery Latency</h2>
+                <canvas id="latencyChart"></canvas>
+                <div id="latencySummaryTop" class="latency-summary"></div>
+                <div class="collapsible-header" id="toggleLatencyTable">
+                    <h3>Latency Table</h3>
+                    <button id="toggleLatencyTableBtn" class="btn">Show</button>
+                </div>
+                <div id="latencyTableContainer" class="collapsible hidden">
+                    <table id="latencyTable">
+                        <thead>
+                            <tr><th>Message ID</th><th>Sent</th><th>Received</th><th>Latency (ms)</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
             <section class="message-display">
-                <h2>Message Log</h2>
-                <div id="messageList" class="message-list">
+                <div class="collapsible-header" id="toggleLog">
+                    <h2>Message Log</h2>
+                    <button id="toggleLogBtn" class="btn">Show</button>
+                </div>
+                <div id="messageLogContainer" class="collapsible hidden">
+                    <div id="messageList" class="message-list"></div>
                 </div>
             </section>
         </main>
