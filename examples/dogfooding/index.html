@@ -51,6 +51,17 @@
                 </div>
             </section>
 
+            <section class="store-query">
+                <h2>Store Protocol Query</h2>
+                <div class="store-controls">
+                    <label for="storeMessageCount">Number of messages to fetch:</label>
+                    <input type="number" id="storeMessageCount" value="5" min="1" max="100" />
+                    <button id="queryStoreButton" class="btn btn-primary">Query Store</button>
+                </div>
+                <div id="storeQueryStatus" class="store-status"></div>
+                <div id="storeQueryResults" class="store-results"></div>
+            </section>
+
             <section class="charts">
                 <h2>Discovery Peers Over Time</h2>
                 <canvas id="discoveryChart"></canvas>

@@ -27,6 +27,9 @@ import {
   trackMessageSent,
   trackMessageReceived,
   recordLatency,
+  updateStoreQueryStatus,
+  displayStoreQueryResults,
+  clearStoreQueryResults,
 } from "./ui-manager";
 
 const NUM_MESSAGES_PER_BATCH = 5;
@@ -206,6 +209,100 @@ async function initializeApp() {
       console.log("Subscription active.");
     };
 
+    const queryStoreMessages = async () => {
+      const storeMessageCountInput = document.getElementById("storeMessageCount") as HTMLInputElement;
+      const messageLimit = storeMessageCountInput ? parseInt(storeMessageCountInput.value, 10) : 5;
+      
+      if (isNaN(messageLimit) || messageLimit < 1) {
+        updateStoreQueryStatus("Please enter a valid number of messages (minimum 1)", true);
+        return;
+      }
+
+      clearStoreQueryResults();
+      updateStoreQueryStatus("Querying store...", false);
+      console.log(`Querying store for up to ${messageLimit} messages...`);
+
+      try {
+        const decoder = createWakuDecoder();
+        const allMessages: ChatMessage[] = [];
+        
+        console.log("Decoder content topic:", decoder.contentTopic);
+        console.log("Decoder pubsub topic:", decoder.pubsubTopic);
+        
+        // Query for messages from the last hour, using paginationLimit to control result size
+        const timeEnd = new Date();
+        const timeStart = new Date(Date.now() - 1000 * 60 * 60);
+        
+        const queryOptions = {
+          timeStart,
+          timeEnd,
+          paginationForward: false, // Start from newest
+          paginationLimit: messageLimit, // Limit the number of messages returned
+        };
+
+        console.log("Store query options:", queryOptions);
+        console.log("Time range:", timeStart.toISOString(), "to", timeEnd.toISOString());
+
+        // Collect messages - stop once we have enough
+        await node.store.queryWithOrderedCallback(
+          [decoder],
+          async (wakuMessage) => {
+            // Check if we already have enough messages before processing more
+            if (allMessages.length >= messageLimit) {
+              console.log(`Already collected ${messageLimit} messages, stopping`);
+              return true; // Stop processing
+            }
+            
+            const chatMessage = decodeMessage(wakuMessage.payload);
+            if (chatMessage) {
+              allMessages.push(chatMessage);
+              console.log(`Store found message ${allMessages.length}/${messageLimit}:`, {
+                id: chatMessage.id,
+                content: chatMessage.content.substring(0, 50),
+                timestamp: new Date(chatMessage.timestamp).toISOString(),
+                sender: chatMessage.senderPeerId.substring(0, 12)
+              });
+              
+              // Stop if we've reached the limit
+              if (allMessages.length >= messageLimit) {
+                console.log(`Reached limit of ${messageLimit} messages, stopping`);
+                return true; // Stop processing
+              }
+            } else {
+              console.warn("Failed to decode message from store");
+            }
+            
+            return false; // Continue to next message
+          },
+          queryOptions
+        );
+
+        console.log(`Store query completed. Collected ${allMessages.length} messages.`);
+        
+        if (allMessages.length > 0) {
+          // Sort by timestamp descending (newest first)
+          // Since we're querying with paginationForward: false, we're getting recent messages,
+          // but they may not be in perfect order, so we sort them
+          allMessages.sort((a, b) => b.timestamp - a.timestamp);
+          
+          console.log(`Returning ${allMessages.length} message(s)`);
+          console.log("Newest message timestamp:", new Date(allMessages[0].timestamp).toISOString());
+          if (allMessages.length > 1) {
+            console.log("Oldest returned message timestamp:", new Date(allMessages[allMessages.length - 1].timestamp).toISOString());
+          }
+          
+          updateStoreQueryStatus(`✓ Successfully retrieved ${allMessages.length} message${allMessages.length !== 1 ? 's' : ''} from store`, false);
+          displayStoreQueryResults(allMessages);
+        } else {
+          updateStoreQueryStatus("✓ Query completed successfully, but no messages found in store", false);
+          displayStoreQueryResults([]);
+        }
+      } catch (error) {
+        console.error("Error querying store:", error);
+        updateStoreQueryStatus(`✗ Error querying store: ${error instanceof Error ? error.message : String(error)}`, true);
+      }
+    };
+
     const sendMessageButton = document.getElementById("sendMessageButton");
     if (sendMessageButton) {
       sendMessageButton.addEventListener("click", () => {
@@ -238,6 +335,14 @@ async function initializeApp() {
       searchInput.addEventListener("input", () => { 
         console.log("Search input changed");
         renderMessages(getSearchTerm());
+      });
+    }
+
+    const queryStoreButton = document.getElementById("queryStoreButton");
+    if (queryStoreButton) {
+      queryStoreButton.addEventListener("click", () => {
+        console.log("Query Store button clicked");
+        queryStoreMessages();
       });
     }
 
