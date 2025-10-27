@@ -92,6 +92,24 @@ h2 {
     background-color: #2980b9;
 }
 
+.btn-success {
+    background-color: #27ae60;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #229954;
+}
+
+.btn-danger {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+}
+
 .search-container {
     margin-top: 15px;
     display: flex;
@@ -104,6 +122,40 @@ h2 {
     border: 1px solid #ddd;
     border-radius: 5px;
     font-size: 0.9em;
+}
+
+/* Store Query Section */
+.store-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.store-controls label {
+    font-weight: 500;
+    color: #555;
+}
+
+.store-controls input[type="number"] {
+    width: 80px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 0.9em;
+}
+
+.store-status {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    min-height: 20px;
+}
+
+.store-results {
+    margin-top: 15px;
+    max-height: 500px;
+    overflow-y: auto;
 }
 
 /* Message Display */
@@ -214,7 +266,7 @@ footer {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .message-stats, .message-controls {
+    .message-stats, .message-controls, .store-query, .charts {
         grid-column: span 1;
     }
 

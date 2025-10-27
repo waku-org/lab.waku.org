@@ -322,3 +322,82 @@ export function recordLatency(id: string, sent: number, received?: number) {
 export function wireUiToggles() {
     setupCollapsibles();
 }
+
+// Store Query UI
+const storeQueryStatusEl = document.getElementById("storeQueryStatus") as HTMLDivElement | null;
+const storeQueryResultsEl = document.getElementById("storeQueryResults") as HTMLDivElement | null;
+
+export function updateStoreQueryStatus(message: string, isError: boolean = false) {
+    if (!storeQueryStatusEl) return;
+    storeQueryStatusEl.textContent = message;
+    storeQueryStatusEl.style.color = isError ? '#d32f2f' : '#2e7d32';
+    storeQueryStatusEl.style.fontWeight = 'bold';
+    storeQueryStatusEl.style.marginTop = '10px';
+}
+
+export function displayStoreQueryResults(messages: ChatMessage[]) {
+    if (!storeQueryResultsEl) return;
+    
+    storeQueryResultsEl.innerHTML = "";
+    
+    if (messages.length === 0) {
+        storeQueryResultsEl.innerHTML = "<p style='color: #666; font-style: italic;'>No messages found.</p>";
+        return;
+    }
+    
+    const title = document.createElement("h3");
+    title.textContent = `Found ${messages.length} message${messages.length !== 1 ? 's' : ''}:`;
+    title.style.marginTop = "15px";
+    storeQueryResultsEl.appendChild(title);
+    
+    messages.forEach((message, index) => {
+        const item = document.createElement("div");
+        item.classList.add("message-item");
+        item.style.marginBottom = "10px";
+        item.style.padding = "10px";
+        item.style.border = "1px solid #ddd";
+        item.style.borderRadius = "4px";
+        item.style.backgroundColor = "#f9f9f9";
+        
+        const indexLabel = document.createElement("p");
+        indexLabel.style.fontWeight = "bold";
+        indexLabel.style.marginBottom = "5px";
+        indexLabel.textContent = `Message ${index + 1}`;
+        
+        const idText = document.createElement("p");
+        idText.style.fontSize = "0.9em";
+        idText.style.color = "#666";
+        idText.textContent = `ID: ${message.id}`;
+        
+        const contentP = document.createElement("p");
+        contentP.style.margin = "8px 0";
+        contentP.textContent = message.content;
+        
+        const senderInfoP = document.createElement("p");
+        senderInfoP.style.fontSize = "0.9em";
+        senderInfoP.style.color = "#666";
+        senderInfoP.textContent = `From: ${message.senderPeerId.substring(0, 12)}...`;
+        
+        const timestampP = document.createElement("p");
+        timestampP.style.fontSize = "0.9em";
+        timestampP.style.color = "#666";
+        timestampP.textContent = `Time: ${new Date(message.timestamp).toLocaleString()}`;
+        
+        item.appendChild(indexLabel);
+        item.appendChild(idText);
+        item.appendChild(contentP);
+        item.appendChild(senderInfoP);
+        item.appendChild(timestampP);
+        
+        storeQueryResultsEl.appendChild(item);
+    });
+}
+
+export function clearStoreQueryResults() {
+    if (storeQueryResultsEl) {
+        storeQueryResultsEl.innerHTML = "";
+    }
+    if (storeQueryStatusEl) {
+        storeQueryStatusEl.textContent = "";
+    }
+}
